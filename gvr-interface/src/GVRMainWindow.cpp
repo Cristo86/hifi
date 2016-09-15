@@ -41,7 +41,7 @@ const float LIBOVR_LONG_PRESS_DURATION = 0.75f;
 
 #include "GVRMainWindow.h"
 
-
+#include <Thing.h>
 
 GVRMainWindow::GVRMainWindow(QWidget* parent) :
     QMainWindow(parent),
