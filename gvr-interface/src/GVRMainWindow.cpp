@@ -18,7 +18,7 @@
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QPushButton>
-
+#include <aapepe/Thing.h>
 #ifndef ANDROID
 
 #include <QtWidgets/QDesktopWidget>
@@ -41,7 +41,7 @@ const float LIBOVR_LONG_PRESS_DURATION = 0.75f;
 
 #include "GVRMainWindow.h"
 
-#include <Thing.h>
+//#include <Thing.h>
 
 GVRMainWindow::GVRMainWindow(QWidget* parent) :
     QMainWindow(parent),
@@ -75,6 +75,7 @@ GVRMainWindow::GVRMainWindow(QWidget* parent) :
     
     // add the interface view
     new InterfaceView(baseWidget);
+
 }
 
 GVRMainWindow::~GVRMainWindow() {

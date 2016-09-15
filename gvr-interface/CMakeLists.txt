@@ -24,7 +24,7 @@ endif ()
 
 include_directories(${Qt5Gui_PRIVATE_INCLUDE_DIRS})
 
-link_hifi_libraries(shared networking audio-client avatars plugins aapepe-android)
+link_hifi_libraries(shared networking audio-client avatars plugins aapepe)
 
 if (ANDROID)
   find_package(LibOVR)

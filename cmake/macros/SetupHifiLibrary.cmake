@@ -14,7 +14,9 @@ macro(SETUP_HIFI_LIBRARY)
   # grab the implementation and header files
   file(GLOB_RECURSE LIB_SRCS "src/*.h" "src/*.cpp" "src/*.c")
   list(APPEND ${TARGET_NAME}_SRCS ${LIB_SRCS})
-
+  if (${TARGET_NAME} MATCHES "aapepe")
+     MESSAGE (STATUS "SOURCE ${LIB_SRCS}")
+  endif()
   # add compiler flags to AVX source files
   file(GLOB_RECURSE AVX_SRCS "src/avx/*.cpp" "src/avx/*.c")
   foreach(SRC ${AVX_SRCS})
@@ -42,6 +44,7 @@ macro(SETUP_HIFI_LIBRARY)
   setup_memory_debugger()
 
   # create a library and set the property so it can be referenced later
+  message (STATUS "> > > > > >: SetupHifiLibrary ${TARGET_NAME}")
   if (${${TARGET_NAME}_SHARED})
     add_library(${TARGET_NAME} SHARED ${LIB_SRCS} ${AUTOSCRIBE_SHADER_LIB_SRC} ${QT_RESOURCES_FILE})
   else ()
