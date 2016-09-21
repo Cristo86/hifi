@@ -22,7 +22,9 @@
 #include <gl/OpenGLVersionChecker.h>
 #include <SharedUtil.h>
 
+#ifndef ANDROID
 #include <steamworks-wrapper/SteamClient.h>
+#endif
 
 #include "AddressManager.h"
 #include "Application.h"
@@ -140,7 +142,9 @@ int main(int argc, const char* argv[]) {
     // or in the main window ctor, before GL startup.
     Application::initPlugins(arguments);
 
+#ifndef ANDROID
     SteamClient::init();
+#endif
 
     int exitCode;
     {
@@ -207,7 +211,9 @@ int main(int argc, const char* argv[]) {
 
     Application::shutdownPlugins();
 
+#ifndef ANDROID
     SteamClient::shutdown();
+#endif
 
     qCDebug(interfaceapp, "Normal exit.");
 #if !defined(DEBUG) && !defined(Q_OS_LINUX)
