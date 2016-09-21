@@ -97,7 +97,9 @@
 #include <ScriptEngines.h>
 #include <ScriptCache.h>
 #include <SoundCache.h>
+#ifndef ANDROID
 #include <steamworks-wrapper/SteamClient.h>
+#endif
 #include <Tooltip.h>
 #include <udt/PacketHeaders.h>
 #include <UserActivityLogger.h>
@@ -205,7 +207,7 @@ static const QString INFO_HELP_PATH = "html/help.html";
 static const unsigned int THROTTLED_SIM_FRAMERATE = 15;
 static const int THROTTLED_SIM_FRAME_PERIOD_MS = MSECS_PER_SECOND / THROTTLED_SIM_FRAMERATE;
 
-static const uint32_t INVALID_FRAME = UINT32_MAX;
+static const uint32_t INVALID_FRAME = std::numeric_limits<std::uint32_t>::max();
 
 static const float PHYSICS_READY_RANGE = 3.0f; // how far from avatar to check for entities that aren't ready for simulation
 
@@ -1669,9 +1671,9 @@ void Application::initializeUi() {
     rootContext->setContextProperty("Reticle", getApplicationCompositor().getReticleInterface());
 
     rootContext->setContextProperty("ApplicationCompositor", &getApplicationCompositor());
-
+#ifndef ANDROID
     rootContext->setContextProperty("Steam", new SteamScriptingInterface(engine));
-    
+#endif
 
     _glWidget->installEventFilter(offscreenUi.data());
     offscreenUi->setMouseTranslator([=](const QPointF& pt) {
@@ -2964,9 +2966,9 @@ void Application::idle(float nsecsElapsed) {
     }
 
     PROFILE_RANGE(__FUNCTION__);
-
+#ifndef ANDROID
     SteamClient::runCallbacks();
-
+#endif
     float secondsSinceLastUpdate = nsecsElapsed / NSECS_PER_MSEC / MSECS_PER_SECOND;
 
     // If the offscreen Ui has something active that is NOT the root, then assume it has keyboard focus.
@@ -3289,13 +3291,14 @@ void Application::init() {
     }
 
     // when +connect_lobby in command line, join steam lobby
+#ifndef ANDROID
     const QString STEAM_LOBBY_COMMAND_LINE_KEY = "+connect_lobby";
     int lobbyIndex = arguments().indexOf(STEAM_LOBBY_COMMAND_LINE_KEY);
     if (lobbyIndex != -1) {
         QString lobbyId = arguments().value(lobbyIndex + 1);
         SteamClient::joinLobby(lobbyId);
     }
-
+#endif
     Setting::Handle<bool> firstRun { Settings::firstRun, true };
     if (addressLookupString.isEmpty() && firstRun.get()) {
         qCDebug(interfaceapp) << "First run and no URL passed... attempting to go to Home or Entry...";
@@ -4942,7 +4945,9 @@ void Application::registerScriptEngineWithApplicationServices(ScriptEngine* scri
     scriptEngine->registerGlobalObject("UserActivityLogger", DependencyManager::get<UserActivityLoggerScriptingInterface>().data());
     scriptEngine->registerGlobalObject("Users", DependencyManager::get<UsersScriptingInterface>().data());
 
+#ifndef ANDROID
     scriptEngine->registerGlobalObject("Steam", new SteamScriptingInterface(scriptEngine));
+#endif
 
     auto scriptingInterface = DependencyManager::get<controller::ScriptingInterface>();
     scriptEngine->registerGlobalObject("Controller", scriptingInterface.data());
