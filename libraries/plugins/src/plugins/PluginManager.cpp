@@ -145,7 +145,7 @@ const CodecPluginList& PluginManager::getCodecPlugins() {
     return codecPlugins;
 }
 
-#ifndef Q_OS_ANDROID
+//#ifndef Q_OS_ANDROID
 
 // TODO migrate to a DLL model where plugins are discovered and loaded at runtime by the PluginManager class
 extern DisplayPluginList getDisplayPlugins();
@@ -290,4 +290,4 @@ void PluginManager::saveSettings() {
     saveInputPluginSettings(getInputPlugins());
 }
 
-#endif
+//#endif
