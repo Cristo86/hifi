@@ -133,7 +133,7 @@ namespace gpu {
     }
 
     namespace gles {
-        class GLBackend;
+        class GLESBackend;
         class GLESBuffer;
     }
 }
