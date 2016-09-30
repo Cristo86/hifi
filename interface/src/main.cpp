@@ -40,17 +40,21 @@
 #endif
 
 int main(int argc, const char* argv[]) {
+    qDebug() << "First main line";
 #if HAS_BUGSPLAT
     static QString BUG_SPLAT_DATABASE = "interface_alpha";
     static QString BUG_SPLAT_APPLICATION_NAME = "Interface";
     CrashReporter crashReporter { BUG_SPLAT_DATABASE, BUG_SPLAT_APPLICATION_NAME, BuildInfo::VERSION };
 #endif
+        qDebug() << "A1";
 
     disableQtBearerPoll(); // Fixes wifi ping spikes
+        qDebug() << "A2";
     
-    QString applicationName = "High Fidelity Interface - " + qgetenv("USERNAME");
+    QString applicationName = "High Fidelity Interface - myusername";  //qgetenv("USERNAME");
 
     bool instanceMightBeRunning = true;
+        qDebug() << "A3";
 
     QStringList arguments;
     for (int i = 0; i < argc; ++i) {
@@ -65,17 +69,25 @@ int main(int argc, const char* argv[]) {
     QSharedMemory sharedMemory { applicationName };
     instanceMightBeRunning = !sharedMemory.create(1, QSharedMemory::ReadOnly);
 #endif
+        qDebug() << "A4";
 
     if (instanceMightBeRunning) {
+                qDebug() << "A5";
+
         // Try to connect and send message to existing interface instance
         QLocalSocket socket;
+                            qDebug() << "A51" << applicationName;
 
         socket.connectToServer(applicationName);
+                            qDebug() << "A53";
 
         static const int LOCAL_SERVER_TIMEOUT_MS = 500;
+                            qDebug() << "A55";
 
         // Try to connect - if we can't connect, interface has probably just gone down
         if (socket.waitForConnected(LOCAL_SERVER_TIMEOUT_MS)) {
+                            qDebug() << "A6";
+
             QCommandLineParser parser;
             QCommandLineOption urlOption("url", "", "value");
             parser.addOption(urlOption);
@@ -95,14 +107,17 @@ int main(int argc, const char* argv[]) {
             socket.close();
 
             qDebug() << "Interface instance appears to be running, exiting";
-
+            qDebug() << "A99"; 
             return EXIT_SUCCESS;
         }
+        qDebug() << "A7";
 
 #ifdef Q_OS_WIN
+        qDebug() << "A8";
         return EXIT_SUCCESS;
 #endif
     }
+        qDebug() << "A9";
 
     // Check OpenGL version.
     // This is done separately from the main Application so that start-up and shut-down logic within the main Application is
@@ -110,15 +125,25 @@ int main(int argc, const char* argv[]) {
     bool override = false;
     QJsonObject glData;
     {
+        QApplication app2(argc, const_cast<char**>(argv));
+        qDebug("A10 - %d" , argc);
+        qDebug("A10 - %s" , argv);
         OpenGLVersionChecker openGLVersionChecker(argc, const_cast<char**>(argv));
+        qDebug() << "A11";
         bool valid = true;
         glData = openGLVersionChecker.checkVersion(valid, override);
+        qDebug() << "A12";
         if (!valid) {
+            qDebug() << "A14";
             if (override) {
+                qDebug() << "A15";
                 auto glVersion = glData["version"].toString();
                 qCDebug(interfaceapp, "Running on insufficient OpenGL version: %s.", glVersion.toStdString().c_str());
+                qDebug() << "A16";
             } else {
+                qDebug() << "A17";
                 qCDebug(interfaceapp, "Early exit due to OpenGL version.");
+                qDebug() << "A18";
                 return 0;
             }
         }
@@ -160,6 +185,7 @@ int main(int argc, const char* argv[]) {
         usecTimestampNowForceClockSkew(clockSkew);
         qCDebug(interfaceapp) << "clockSkewOption=" << clockSkewOption << "clockSkew=" << clockSkew;
     }
+    qDebug() << "about to call initplugins ";
 
     // Oculus initialization MUST PRECEDE OpenGL context creation.
     // The nature of the Application constructor means this has to be either here,
@@ -167,16 +193,24 @@ int main(int argc, const char* argv[]) {
     Application::initPlugins(arguments);
 
 #ifndef ANDROID
+        qDebug() << "2";
+
     SteamClient::init();
+        qDebug() << "3";
 #endif
 
     int exitCode;
     {
+        qDebug() << "4";
         QSettings::setDefaultFormat(QSettings::IniFormat);
+        qDebug() << "5: building app";
         Application app(argc, const_cast<char**>(argv), startupTime);
+        qDebug() << "6: building app";
 
         // If we failed the OpenGLVersion check, log it.
         if (override) {
+            qDebug() << "7";
+
             auto accountManager = DependencyManager::get<AccountManager>();
             if (accountManager->isLoggedIn()) {
                 UserActivityLogger::getInstance().insufficientGLVersion(glData);
@@ -190,6 +224,7 @@ int main(int argc, const char* argv[]) {
                 });
             }
         }
+            qDebug() << "8";
 
         // Setup local server
         QLocalServer server { &app };
@@ -199,6 +234,7 @@ int main(int argc, const char* argv[]) {
         server.listen(applicationName);
 
         QObject::connect(&server, &QLocalServer::newConnection, &app, &Application::handleLocalServerConnection, Qt::DirectConnection);
+            qDebug() << "9";
 
 #ifdef HAS_BUGSPLAT
         auto accountManager = DependencyManager::get<AccountManager>();
@@ -221,8 +257,10 @@ int main(int argc, const char* argv[]) {
             crashReporter.mpSender.sendAdditionalFile(qPrintable(rolledLogPath));
         });
 #endif
+            qDebug() << "10";
 
         printSystemInformation();
+            qDebug() << "11";
 
         QTranslator translator;
         translator.load("i18n/interface_en");
