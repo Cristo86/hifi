@@ -381,6 +381,7 @@ public:
 };
 
 void messageHandler(QtMsgType type, const QMessageLogContext& context, const QString& message) {
+    qDebug() << "messageHandler 00";
     QString logMessage = LogHandler::getInstance().printMessage((LogMsgType) type, context, message);
 
     if (!logMessage.isEmpty()) {
@@ -390,6 +391,7 @@ void messageHandler(QtMsgType type, const QMessageLogContext& context, const QSt
 #endif
         qApp->getLogger()->addMessage(qPrintable(logMessage + "\n"));
     }
+    qDebug() << "messageHandler 03";
 }
 
 static const QString STATE_IN_HMD = "InHMD";
@@ -403,7 +405,7 @@ static const QString STATE_GROUNDED = "Grounded";
 static const QString STATE_NAV_FOCUSED = "NavigationFocused";
 
 bool setupEssentials(int& argc, char** argv) {
-        qDebug() << "setupEssentials";
+    qDebug() << "setupEssentials";
 
     const char** constArgv = const_cast<const char**>(argv);
     const char* portStr = getCmdOption(argc, constArgv, "--listenPort");
@@ -428,17 +430,20 @@ bool setupEssentials(int& argc, char** argv) {
 
     Setting::init();
 
+    qDebug() << "Setting dependencies...";
     // Set dependencies
     DependencyManager::set<AccountManager>(std::bind(&Application::getUserAgent, qApp));
     DependencyManager::set<ScriptEngines>();
     DependencyManager::set<Preferences>();
     DependencyManager::set<recording::Deck>();
     DependencyManager::set<recording::Recorder>();
+    qDebug() << "Setting dependencies (until recording::Recorder)...";
     DependencyManager::set<AddressManager>();
     DependencyManager::set<NodeList>(NodeType::Agent, listenPort);
     DependencyManager::set<GeometryCache>();
     DependencyManager::set<ModelCache>();
     DependencyManager::set<ScriptCache>();
+    qDebug() << "Setting dependencies (until ScriptCache)...";
     DependencyManager::set<SoundCache>();
     DependencyManager::set<Faceshift>();
     DependencyManager::set<DdeFaceTracker>();
@@ -446,6 +451,7 @@ bool setupEssentials(int& argc, char** argv) {
     DependencyManager::set<AudioClient>();
     DependencyManager::set<AudioScope>();
     DependencyManager::set<DeferredLightingEffect>();
+    qDebug() << "Setting dependencies (until DeferredLightingEffect)...";
     DependencyManager::set<TextureCache>();
     DependencyManager::set<FramebufferCache>();
     DependencyManager::set<AnimationCache>();
@@ -453,10 +459,14 @@ bool setupEssentials(int& argc, char** argv) {
     DependencyManager::set<UsersScriptingInterface>();
     DependencyManager::set<AvatarManager>();
     DependencyManager::set<LODManager>();
+    qDebug() << "Setting dependencies (until LODManager)...";
     DependencyManager::set<StandAloneJSConsole>();
     DependencyManager::set<DialogsManager>();
     DependencyManager::set<BandwidthRecorder>();
+    qDebug() << "Setting dependencies check BandwidthRecorder " << DependencyManager::get<BandwidthRecorder>();
+    qDebug() << "Setting dependencies check ResourceCacheSharedItems (not yet set)" << DependencyManager::get<ResourceCacheSharedItems>();
     DependencyManager::set<ResourceCacheSharedItems>();
+    qDebug() << "Setting dependencies check ResourceCacheSharedItems " << DependencyManager::get<ResourceCacheSharedItems>();
     DependencyManager::set<DesktopScriptingInterface>();
     DependencyManager::set<EntityScriptingInterface>(true);
     DependencyManager::set<RecordingScriptingInterface>();
@@ -466,6 +476,7 @@ bool setupEssentials(int& argc, char** argv) {
     DependencyManager::set<ToolbarScriptingInterface>();
     DependencyManager::set<UserActivityLoggerScriptingInterface>();
 
+    qDebug() << "Setting dependencies (until UserActivityLoggerScriptingInterface)...";
 #if defined(Q_OS_MAC) || defined(Q_OS_WIN)
     DependencyManager::set<SpeechRecognizer>();
 #endif
@@ -477,14 +488,18 @@ bool setupEssentials(int& argc, char** argv) {
     DependencyManager::set<InterfaceActionFactory>();
     DependencyManager::set<AudioInjectorManager>();
     DependencyManager::set<MessagesClient>();
+    qDebug() << "Setting dependencies (until MessagesClient)...";
     controller::StateController::setStateVariables({ { STATE_IN_HMD, STATE_CAMERA_FULL_SCREEN_MIRROR,
                     STATE_CAMERA_FIRST_PERSON, STATE_CAMERA_THIRD_PERSON, STATE_CAMERA_ENTITY, STATE_CAMERA_INDEPENDENT,
                     STATE_SNAP_TURN, STATE_GROUNDED, STATE_NAV_FOCUSED } });
     DependencyManager::set<UserInputMapper>();
+    qDebug() << "Setting dependencies (until UserInputMapper)...";
     DependencyManager::set<controller::ScriptingInterface, ControllerScriptingInterface>();
+    qDebug() << "Setting dependencies (controller::ScriptingInterface, ControllerScriptingInterface)...";
     DependencyManager::set<InterfaceParentFinder>();
     DependencyManager::set<EntityTreeRenderer>(true, qApp, qApp);
     DependencyManager::set<CompositorHelper>();
+    qDebug() << "Setting dependencies...Ended";
     return previousSessionCrashed;
 }
 
@@ -533,30 +548,34 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer) :
     _lastFaceTrackerUpdate(0)
 {
 
-        qDebug() << "Application::Application";
+    qDebug() << "Application::Application";
 
     PluginContainer* pluginContainer = dynamic_cast<PluginContainer*>(this); // set the container for any plugins that care
     PluginManager::getInstance()->setContainer(pluginContainer);
 
+    qDebug() << "Application::Application container set to pluginManager";
     QThreadPool::globalInstance()->setMaxThreadCount(MIN_PROCESSING_THREAD_POOL_SIZE);
     thread()->setPriority(QThread::HighPriority);
     thread()->setObjectName("Main Thread");
 
     setInstance(this);
-
+    qDebug() << "Application::Application 00001";
     auto controllerScriptingInterface = DependencyManager::get<controller::ScriptingInterface>().data();
     _controllerScriptingInterface = dynamic_cast<ControllerScriptingInterface*>(controllerScriptingInterface);
 
     _entityClipboard->createRootElement();
-
+    qDebug() << "Application::Application 00002";
 #ifdef Q_OS_WIN
     installNativeEventFilter(&MyNativeEventFilter::getInstance());
 #endif
 
     _logger = new FileLogger(this);  // After setting organization name in order to get correct directory
+    qDebug() << "Application::Application 00002b";
+    qDebug() << "TODO: Application.cpp:Application qInstallMessageHandler(messageHandler) SIGSEVs";
 
-    qInstallMessageHandler(messageHandler);
+    //qInstallMessageHandler(messageHandler); TODO restore this and check why it crashes!
 
+    qDebug() << "Application::Application 00003";
     QFontDatabase::addApplicationFont(PathUtils::resourcesPath() + "styles/Inconsolata.otf");
     _window->setWindowTitle("Interface");
 
@@ -580,6 +599,7 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer) :
 #endif
 
 
+    qDebug() << "Application::Application 00004";
     _bookmarks = new Bookmarks();  // Before setting up the menu
 
     // start the nodeThread so its event loop is running
@@ -598,6 +618,7 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer) :
     // put the NodeList and datagram processing on the node thread
     nodeList->moveToThread(nodeThread);
 
+    qDebug() << "Application::Application 00005";
     // put the audio processing on a separate thread
     QThread* audioThread = new QThread();
     audioThread->setObjectName("Audio Thread");
@@ -616,6 +637,7 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer) :
         return myAvatar ? myAvatar->getOrientationForAudio() : Quaternions::IDENTITY;
     });
 
+    qDebug() << "Application::Application 00006";
     audioIO->moveToThread(audioThread);
     recording::Frame::registerFrameHandler(AudioConstants::getAudioFrameName(), [=](recording::Frame::ConstPointer frame) {
         audioIO->handleRecordedAudioInput(frame->data);
@@ -629,6 +651,7 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer) :
         }
     });
 
+    qDebug() << "Application::Application 00007";
     auto& audioScriptingInterface = AudioScriptingInterface::getInstance();
     connect(audioThread, &QThread::started, audioIO.data(), &AudioClient::start);
     connect(audioIO.data(), &AudioClient::destroyed, audioThread, &QThread::quit);
@@ -649,6 +672,7 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer) :
         }
     });
 
+    qDebug() << "Application::Application 00008";
     audioThread->start();
 
     ResourceManager::init();
@@ -672,6 +696,7 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer) :
     connect(&domainHandler, SIGNAL(disconnectedFromDomain()), SLOT(clearDomainOctreeDetails()));
     connect(&domainHandler, &DomainHandler::domainConnectionRefused, this, &Application::domainConnectionRefused);
 
+    qDebug() << "Application::Application 00009";
     // update our location every 5 seconds in the metaverse server, assuming that we are authenticated with one
     const qint64 DATA_SERVER_LOCATION_CHANGE_UPDATE_MSECS = 5 * MSECS_PER_SECOND;
 
@@ -731,6 +756,7 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer) :
         registerScriptEngineWithApplicationServices(engine);
     });
 
+    qDebug() << "Application::Application 00010";
     connect(scriptEngines, &ScriptEngines::scriptCountChanged, scriptEngines, [this] {
         auto scriptEngines = DependencyManager::get<ScriptEngines>();
         if (scriptEngines->getRunningScripts().isEmpty()) {
@@ -752,6 +778,7 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer) :
     int wsaresult = WSAStartup(MAKEWORD(2, 2), &WsaData);
 #endif
 
+    qDebug() << "Application::Application 00011";
     // tell the NodeList instance who to tell the domain server we care about
     nodeList->addSetOfNodeTypesToNodeInterestSet(NodeSet() << NodeType::AudioMixer << NodeType::AvatarMixer
         << NodeType::EntityServer << NodeType::AssetServer << NodeType::MessagesMixer);
@@ -763,6 +790,7 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer) :
     connect(&identityPacketTimer, &QTimer::timeout, myAvatar.get(), &MyAvatar::sendIdentityPacket);
     identityPacketTimer.start(AVATAR_IDENTITY_PACKET_SEND_INTERVAL_MSECS);
 
+    qDebug() << "Application::Application 00011a010";
     const char** constArgv = const_cast<const char**>(argv);
     QString concurrentDownloadsStr = getCmdOption(argc, constArgv, "--concurrent-downloads");
     bool success;
@@ -770,8 +798,10 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer) :
     if (!success) {
         concurrentDownloads = MAX_CONCURRENT_RESOURCE_DOWNLOADS;
     }
-    ResourceCache::setRequestLimit(concurrentDownloads);
+    qDebug() << "TODO: Application::Application calling the ResourceCache (and inside, DependencyManager has no obj!) makes it crash, analyze";
+    //ResourceCache::setRequestLimit(concurrentDownloads);
 
+    qDebug() << "Application::Application 00011a015";
     _glWidget = new GLCanvas();
     getApplicationCompositor().setRenderingWidget(_glWidget);
     _window->setCentralWidget(_glWidget);
@@ -791,6 +821,7 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer) :
 #endif
     cursorTarget->setCursor(Qt::BlankCursor);
 
+    qDebug() << "Application::Application 00011a018";
     // enable mouse tracking; otherwise, we only get drag events
     _glWidget->setMouseTracking(true);
     // Make sure the window is set to the correct size by processing the pending events
@@ -803,6 +834,7 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer) :
     updateHeartbeat();
 
 
+    qDebug() << "Application::Application 00012";
     // sessionRunTime will be reset soon by loadSettings. Grab it now to get previous session value.
     // The value will be 0 if the user blew away settings this session, which is both a feature and a bug.
     auto gpuIdent = GPUIdent::getInstance();
@@ -874,6 +906,7 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer) :
     connect(myAvatar->getSkeletonModel().get(), &SkeletonModel::skeletonLoaded,
         this, &Application::checkSkeleton, Qt::QueuedConnection);
 
+    qDebug() << "Application::Application 00013";
     // Setup the userInputMapper with the actions
     auto userInputMapper = DependencyManager::get<UserInputMapper>();
     connect(userInputMapper.data(), &UserInputMapper::actionEvent, [this](int action, float state) {
@@ -1022,6 +1055,7 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer) :
         userInputMapper->registerDevice(_touchscreenDevice->getInputDevice());
     }
 
+    qDebug() << "Application::Application 00014";
     // force the model the look at the correct directory (weird order of operations issue)
     scriptEngines->setScriptsLocation(scriptEngines->getScriptsLocation());
     // do this as late as possible so that all required subsystems are initialized
@@ -1126,6 +1160,7 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer) :
     static controller::Pose lastLeftHandPose = myAvatar->getLeftHandPose();
     static controller::Pose lastRightHandPose = myAvatar->getRightHandPose();
 
+    qDebug() << "Application::Application 00015";
     // Periodically send fps as a user activity event
     QTimer* sendStatsTimer = new QTimer(this);
     sendStatsTimer->setInterval(SEND_STATS_INTERVAL_MS);
@@ -1238,6 +1273,7 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer) :
     // Make sure we don't time out during slow operations at startup
     updateHeartbeat();
 
+    qDebug() << "Application::Application 00016";
     OctreeEditPacketSender* packetSender = entityScriptingInterface->getPacketSender();
     EntityEditPacketSender* entityPacketSender = static_cast<EntityEditPacketSender*>(packetSender);
     entityPacketSender->setMyAvatar(myAvatar.get());
@@ -1263,6 +1299,7 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer) :
     // After all of the constructor is completed, then set firstRun to false.
     Setting::Handle<bool> firstRun{ Settings::firstRun, true };
     firstRun.set(false);
+    qDebug() << "Application::Application 00017";
 }
 
 void Application::domainConnectionRefused(const QString& reasonMessage, int reasonCodeInt, const QString& extraInfo) {
