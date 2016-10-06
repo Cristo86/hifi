@@ -451,7 +451,7 @@ bool setupEssentials(int& argc, char** argv) {
     DependencyManager::set<AudioClient>();
     DependencyManager::set<AudioScope>();
     DependencyManager::set<DeferredLightingEffect>();
-    qDebug() << "Setting dependencies (until DeferredLightingEffect)...";
+    qDebug() << "Setting dependencies (until DeferredLightingEffect)... saved? "  << DependencyManager::get<DeferredLightingEffect>();;
     DependencyManager::set<TextureCache>();
     DependencyManager::set<FramebufferCache>();
     DependencyManager::set<AnimationCache>();
@@ -803,7 +803,9 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer) :
 
     qDebug() << "Application::Application 00011a015";
     _glWidget = new GLCanvas();
+    qDebug() << "Application::Application before calling getApplicationCompositor()";
     getApplicationCompositor().setRenderingWidget(_glWidget);
+    qDebug() << "Application::Application before calling getApplicationCompositor() DONE";
     _window->setCentralWidget(_glWidget);
 
     _window->restoreGeometry();
@@ -826,11 +828,14 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer) :
     _glWidget->setMouseTracking(true);
     // Make sure the window is set to the correct size by processing the pending events
     QCoreApplication::processEvents();
+    qDebug() << "Application::Application before calling createContext()";
     _glWidget->createContext();
+    qDebug() << "Application::Application before calling createContext() DONE";
     _glWidget->makeCurrent();
-
+    qDebug() << "Application::Application 00011y";
     initializeGL();
     // Make sure we don't time out during slow operations at startup
+    qDebug() << "Application::Application 00011z";
     updateHeartbeat();
 
 
@@ -1578,10 +1583,14 @@ void Application::initializeGL() {
 
     // Set up the render engine
     render::CullFunctor cullFunctor = LODManager::shouldRender;
+    qCDebug(interfaceapp, "adding job RenderShadowTask");
     _renderEngine->addJob<RenderShadowTask>("RenderShadowTask", cullFunctor);
+    qCDebug(interfaceapp, "Added job RenderShadowTask");
     _renderEngine->addJob<RenderDeferredTask>("RenderDeferredTask", cullFunctor);
     _renderEngine->load();
+    qCDebug(interfaceapp, "Render engine loaded");
     _renderEngine->registerScene(_main3DScene);
+    qCDebug(interfaceapp, "Render engine scene registered");
     // TODO: Load a cached config file
 
     // The UI can't be created until the primary OpenGL
@@ -3309,11 +3318,12 @@ void Application::initDisplay() {
 }
 
 void Application::init() {
+    qDebug() << "Application::init 0001";
     // Make sure Login state is up to date
     DependencyManager::get<DialogsManager>()->toggleLoginDialog();
-
+    qDebug() << "Application::init 0002 DependencyManager::get<DeferredLightingEffect>(): " << DependencyManager::get<DeferredLightingEffect>();
     DependencyManager::get<DeferredLightingEffect>()->init();
-
+    qDebug() << "Application::init 0003";
     DependencyManager::get<AvatarManager>()->init();
     _myCamera.setMode(CAMERA_MODE_FIRST_PERSON);
 
@@ -3418,6 +3428,7 @@ void Application::init() {
             avatar->setCollisionSound(sound);
         }
     }, Qt::QueuedConnection);
+    qDebug() << "Application::init END";
 }
 
 void Application::updateLOD() const {
@@ -4521,6 +4532,7 @@ void Application::displaySide(RenderArgs* renderArgs, Camera& theCamera, bool se
     // Setup the current Zone Entity lighting
     {
         auto stage = DependencyManager::get<SceneScriptingInterface>()->getSkyStage();
+        qDebug() << "get<DeferredLightingEffect>() from Application::displaySide";
         DependencyManager::get<DeferredLightingEffect>()->setGlobalLight(stage->getSunLight());
     }
 
