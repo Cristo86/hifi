@@ -18,6 +18,7 @@
 #include <QUrl>
 #include "PathUtils.h"
 #include <QDebug>
+#include <QDirIterator>
 
 const QString& PathUtils::resourcesPath() {
 #ifdef Q_OS_MAC
@@ -26,7 +27,7 @@ const QString& PathUtils::resourcesPath() {
     /*qDebug() << QCoreApplication::applicationDirPath();
     qDebug() << QCoreApplication::applicationFilePath();
     qDebug() << QCoreApplication::libraryPaths();*/
-    static QString staticResourcePath = "assets:/resources";
+    static QString staticResourcePath = "/data/data/io.highfidelity.hifiinterface/resources";
 #else
     static QString staticResourcePath = QCoreApplication::applicationDirPath() + "/resources/";
 #endif
@@ -66,10 +67,43 @@ QUrl defaultScriptsLocation() {
     QString path = QCoreApplication::applicationDirPath() + "/scripts";
 #elif defined(Q_OS_OSX)
     QString path = QCoreApplication::applicationDirPath() + "/../Resources/scripts";
+#elif defined (ANDROID) 
+    QString path = "file:///data/data/io.highfidelity.hifiinterface/scripts";
 #else
     QString path = QCoreApplication::applicationDirPath() + "/scripts";
 #endif
 
+#ifdef ANDROID
+    return QUrl(path);
+#else 
     QFileInfo fileInfo(path);
-    return QUrl::fromLocalFile(fileInfo.canonicalFilePath());
+    return QUrl::fromLocalFile(fileInfo.canonicalFilePath());    
+#endif 
+}
+
+void copyDirDeep(QString src, QString dst) {
+    QDir dir = QDir::root();
+    dir.mkpath(dst);
+    QDirIterator it(src, QStringList() << "*", QDir::Files|QDir::AllDirs, QDirIterator::Subdirectories);
+    while (it.hasNext()) {
+        QString f = it.next();
+        QFileInfo fInfo(f);
+        QString newDst = dst + (dst.endsWith("/")?"":"/") + fInfo.fileName();
+        if (fInfo.isFile()) {
+            QFile dfile(f);
+            if (dfile.exists(f))
+            {
+                if (dfile.copy(newDst)) {
+                    QFile::setPermissions(newDst, QFile::ReadOwner);
+                } else {
+                    // sometimes copy returns false but it worked anyway
+                    QFile::setPermissions(newDst, QFile::ReadOwner);
+                    qWarning() << "Could not copy to " << newDst;
+                }
+            }
+        } else if (fInfo.isDir() ) {
+            qDebug() << "[XP] Recursive " << f << "," << newDst;
+            copyDirDeep(f, newDst);
+        }
+    }
 }
