@@ -62,11 +62,11 @@ OriginalDesktop.Desktop {
         return map; })({});
 
     Component.onCompleted: {
-        WebEngine.settings.javascriptCanOpenWindows = true;
+/*        WebEngine.settings.javascriptCanOpenWindows = true;
         WebEngine.settings.javascriptCanAccessClipboard = false;
         WebEngine.settings.spatialNavigationEnabled = false;
         WebEngine.settings.localContentCanAccessRemoteUrls = true;
-
+*/
         var toggleHudButton = sysToolbar.addButton({
             objectName: "hudToggle",
             imageURL: "../../../icons/hud.svg",
