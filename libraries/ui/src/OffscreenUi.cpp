@@ -372,15 +372,11 @@ void OffscreenUi::setPinned(bool pinned) {
 }
 
 void OffscreenUi::addMenuInitializer(std::function<void(VrMenu*)> f) {
-    qDebug() << "OffscreenUi::addMenuInitializer";
     if (!_vrMenu) {
         _queuedMenuInitializers.push_back(f);
         return;
     }
-    qDebug() << "OffscreenUi::addMenuInitializer before f(_vrMenu) f?" << (f?1:0) << " _vrMenu?" << (_vrMenu?1:0);
-    qDebug() << "OffscreenUi::addMenuInitializer before f(_vrMenu) f?" << f.target_type().name();
     f(_vrMenu);
-    qDebug() << "OffscreenUi::addMenuInitializer done   f(_vrMenu)";
 }
 
 QQuickItem* OffscreenUi::createInputDialog(const Icon icon, const QString& title, const QString& label,
@@ -492,9 +488,7 @@ private:
 };
 
 void OffscreenUi::createDesktop(const QUrl& url) {
-    qDebug() << "OffscreenUi::createDesktop start";
     if (_desktop) {
-        qDebug() << "Desktop already created";
         return;
     }
 
@@ -503,19 +497,14 @@ void OffscreenUi::createDesktop(const QUrl& url) {
 #else 
     getRootContext()->setContextProperty("DebugQML", QVariant(false));
 #endif
-    qDebug() << "OffscreenUi::createDesktop DebugQML prop set";
-    qDebug() << "OffscreenUi::createDesktop will use url: " << url;
 #ifdef ANDROID
     _desktop = static_cast<QQuickItem*>(load(url));
 #else 
     _desktop = dynamic_cast<QQuickItem*>(load(url));
 #endif
-    qDebug() << "OffscreenUi::createDesktop _desktop from url: " << url;
     Q_ASSERT(_desktop);
     getRootContext()->setContextProperty("desktop", _desktop);
-    qDebug() << "OffscreenUi::createDesktop desktop property set";
     _toolWindow = _desktop->findChild<QQuickItem*>("ToolWindow");
-    qDebug() << "OffscreenUi::createDesktop got ToolWindow";
 
     _vrMenu = new VrMenu(this);
     for (const auto& menuInitializer : _queuedMenuInitializers) {
@@ -523,9 +512,7 @@ void OffscreenUi::createDesktop(const QUrl& url) {
     }
 
     new KeyboardFocusHack();
-    qDebug() << "OffscreenUi::createDesktop keyboardFocusHack instanced";
     connect(_desktop, SIGNAL(showDesktop()), this, SIGNAL(showDesktop()));
-    qDebug() << "OffscreenUi::createDesktop end";
 }
 
 QQuickItem* OffscreenUi::getDesktop() {
