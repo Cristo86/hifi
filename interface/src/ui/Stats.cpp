@@ -94,7 +94,7 @@ bool Stats::includeTimingRecord(const QString& name) {
 
 
 void Stats::updateStats(bool force) {
-    if (!force) {
+/*    if (!force) {
         if (!Menu::getInstance()->isOptionChecked(MenuOption::Stats)) {
             if (isVisible()) {
                 setVisible(false);
@@ -104,7 +104,10 @@ void Stats::updateStats(bool force) {
             setVisible(true);
         }
     }
-
+*/
+    if (!isVisible()) {
+        setVisible(true);
+    }
     bool shouldDisplayTimingDetail = Menu::getInstance()->isOptionChecked(MenuOption::DisplayDebugTimingDetails) &&
         Menu::getInstance()->isOptionChecked(MenuOption::Stats) && isExpanded();
     if (shouldDisplayTimingDetail != PerformanceTimer::isActive()) {

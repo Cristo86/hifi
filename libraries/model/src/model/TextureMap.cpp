@@ -184,6 +184,7 @@ gpu::Texture* TextureUsage::process2DTextureColorFromImage(const QImage& srcImag
     gpu::Texture* theTexture = nullptr;
 
     if ((image.width() > 0) && (image.height() > 0)) {
+        qDebug() << "process2DTextureColorFromImage " << srcImageName.c_str() << "(" << image.width() << "," << image.height() << ")";
         gpu::Element formatGPU;
         gpu::Element formatMip;
         defineColorTexelFormats(formatGPU, formatMip, image, isLinear, doCompress);
@@ -210,6 +211,7 @@ gpu::Texture* TextureUsage::process2DTextureColorFromImage(const QImage& srcImag
 }
 
 gpu::Texture* TextureUsage::create2DTextureFromImage(const QImage& srcImage, const std::string& srcImageName) {
+    qDebug() << "create2DTextureFromImage" << srcImageName.c_str();
     return process2DTextureColorFromImage(srcImage, srcImageName, false, false, true);
 }
 
