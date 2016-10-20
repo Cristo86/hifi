@@ -48,7 +48,7 @@ int main(int argc, const char* argv[]) {
 
     disableQtBearerPoll(); // Fixes wifi ping spikes
     
-    QString applicationName = "High Fidelity Interface - myusername";  //qgetenv("USERNAME");
+    QString applicationName = "High Fidelity Interface - " + qgetenv("USERNAME");
 
     bool instanceMightBeRunning = true;
 
@@ -96,8 +96,6 @@ int main(int argc, const char* argv[]) {
 
             socket.close();
 
-            qDebug() << "Interface instance appears to be running, exiting";
-            qDebug() << "A99"; 
             return EXIT_SUCCESS;
         }
 
