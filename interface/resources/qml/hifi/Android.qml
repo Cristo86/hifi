@@ -1,6 +1,6 @@
 import QtQuick 2.5
 import QtQuick.Controls 1.4
-import QtWebEngine 1.1;
+
 import Qt.labs.settings 1.0
 
 import "../desktop" as OriginalDesktop
@@ -20,20 +20,20 @@ OriginalDesktop.Desktop {
         onEntered: ApplicationCompositor.reticleOverDesktop = true
         onExited: ApplicationCompositor.reticleOverDesktop = false
         acceptedButtons: Qt.NoButton
-        
+		
 
     }
 
     // The tool window, one instance
-    property alias toolWindow: toolWindow
-    ToolWindow { id: toolWindow }
+    /*property alias toolWindow: toolWindow
+    ToolWindow { id: toolWindow }*/
 
-    property var browserProfile: WebEngineProfile {
+    /*property var browserProfile: WebEngineProfile {
         id: webviewProfile
         httpUserAgent: "Chrome/48.0 (HighFidelityInterface)"
         storageName: "qmlWebEngine"
-    }
-
+    }*/
+/*
     Action {
         text: "Open Browser"
         shortcut: "Ctrl+B"
@@ -44,7 +44,7 @@ OriginalDesktop.Desktop {
         property var browserBuilder: Component {
             Browser{}
         }
-    }
+    }*/
 
     Component { id: toolbarBuilder; Toolbar { } }
     // This used to create sysToolbar dynamically with a call to getToolbar() within onCompleted.
@@ -62,11 +62,11 @@ OriginalDesktop.Desktop {
         return map; })({});
 
     Component.onCompleted: {
-        WebEngine.settings.javascriptCanOpenWindows = true;
+/*        WebEngine.settings.javascriptCanOpenWindows = true;
         WebEngine.settings.javascriptCanAccessClipboard = false;
         WebEngine.settings.spatialNavigationEnabled = false;
         WebEngine.settings.localContentCanAccessRemoteUrls = true;
-
+*/
         var toggleHudButton = sysToolbar.addButton({
             objectName: "hudToggle",
             imageURL: "../../../icons/hud.svg",
@@ -90,7 +90,7 @@ OriginalDesktop.Desktop {
     property string adaptedPath: ""
     property string tempDir: ""
 
-    function initWebviewProfileHandlers(profile) {
+    /*function initWebviewProfileHandlers(profile) {
         console.log("The webview url in desktop is: " + currentUrl);
         if (webViewProfileSetup) return;
         webViewProfileSetup = true;
@@ -115,7 +115,7 @@ OriginalDesktop.Desktop {
                 console.log("The download was corrupted, state: " + download.state);
             }
         })
-    }
+    }*/
 
     // Create or fetch a toolbar with the given name
     function getToolbar(name) {
@@ -127,4 +127,5 @@ OriginalDesktop.Desktop {
         return result;
     }
 }
+
 
