@@ -432,6 +432,7 @@ void OpenGLDisplayPlugin::customizeContext() {
         }
     }
     auto renderSize = getRecommendedRenderSize();
+    qDebug() << "renderSize getRecommendedRenderSize " << renderSize.x << "," << renderSize.y; 
     _compositeFramebuffer = gpu::FramebufferPointer(gpu::Framebuffer::create(gpu::Element::COLOR_RGBA_32, renderSize.x, renderSize.y));
 }
 
@@ -540,6 +541,7 @@ void OpenGLDisplayPlugin::compositeOverlay() {
 }
 
 void OpenGLDisplayPlugin::compositePointer() {
+    qDebug() << "OpenGLDisplayPlugin internalPresent";
     auto& cursorManager = Cursor::Manager::instance();
     const auto& cursorData = _cursorsData[cursorManager.getCursor()->getIcon()];
     auto cursorTransform = DependencyManager::get<CompositorHelper>()->getReticleTransform(glm::mat4());
@@ -564,6 +566,7 @@ void OpenGLDisplayPlugin::compositePointer() {
 }
 
 void OpenGLDisplayPlugin::compositeScene() {
+    qDebug() << "OpenGLDisplayPlugin compositeScene";
     render([&](gpu::Batch& batch) {
         batch.enableStereo(false);
         batch.setFramebuffer(_compositeFramebuffer);
@@ -581,8 +584,10 @@ void OpenGLDisplayPlugin::compositeScene() {
 }
 
 void OpenGLDisplayPlugin::compositeLayers() {
+    qDebug() << "OpenGLDisplayPlugin compositeLayers";
     auto renderSize = getRecommendedRenderSize();
     if (!_compositeFramebuffer || _compositeFramebuffer->getSize() != renderSize) {
+        qDebug() << "renderSize getRecommendedRenderSize " << renderSize.x << "," << renderSize.y; 
         _compositeFramebuffer = gpu::FramebufferPointer(gpu::Framebuffer::create(gpu::Element::COLOR_RGBA_32, renderSize.x, renderSize.y));
     }
 
@@ -608,6 +613,7 @@ void OpenGLDisplayPlugin::compositeLayers() {
 }
 
 void OpenGLDisplayPlugin::internalPresent() {
+    qDebug() << "OpenGLDisplayPlugin internalPresent";
 
     render([&](gpu::Batch& batch) {
         batch.enableStereo(false);
