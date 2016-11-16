@@ -2110,7 +2110,7 @@ void Application::paintGL() {
                 glm::mat4 modelTransform;
                 //float x = sinf(((float) glm::radians((float)(numFrame % 360))) );
                 //qDebug() << "x degress " <<  (numFrame % 360);
-                modelTransform = glm::translate(modelTransform, vec3(0.0, -1.0f, 0.0f));
+                modelTransform = glm::translate(modelTransform, vec3(0.0, -4.0f, 0.0f));
                 modelTransform = glm::rotate(modelTransform, glm::radians(numFrame*1.0f), vec3(0.0f,0.0f,1.0f));
 
                 //float dmin = std::min(canvasSize.x, canvasSize.y);
@@ -2287,9 +2287,7 @@ bool Application::importSVOFromURL(const QString& urlString) {
 }
 
 bool Application::event(QEvent* event) {
-    qDebug() << "Application::event " << event->type();
     if (!Menu::getInstance()) {
-        qDebug() << "Application::event aborting Application::event";
         return false;
     }
 
@@ -2298,7 +2296,6 @@ bool Application::event(QEvent* event) {
     static bool isPaintingThrottled = false;
     if ((int)event->type() == (int)Present) {
         if (isPaintingThrottled) {
-            qDebug() << "Application::event isPaintingThrottled";
 
             // If painting (triggered by presentation) is hogging the main thread,
             // repost as low priority to avoid hanging the GUI.
@@ -2309,19 +2306,13 @@ bool Application::event(QEvent* event) {
             postEvent(this, new QEvent(static_cast<QEvent::Type>(Present)), Qt::LowEventPriority);
             isPaintingThrottled = false;
             return true;
-        } else {
-            qDebug() << "Application::event not isPaintingThrottled";
         }
 
         float nsecsElapsed = (float)_lastTimeUpdated.nsecsElapsed();
         if (shouldPaint(nsecsElapsed)) {
-            qDebug() << "Application::event should paint " << nsecsElapsed;
             _lastTimeUpdated.start();
             idle(nsecsElapsed);
             postEvent(this, new QEvent(static_cast<QEvent::Type>(Paint)), Qt::HighEventPriority);
-        } else {
-            qDebug() << "Application::event not should paint";
-
         }
         isPaintingThrottled = true;
 
@@ -3038,7 +3029,7 @@ void Application::touchUpdateEvent(QTouchEvent* event) {
         return;
     }
 
-    if (_keyboardMouseDevice->isActive()) {
+    if (_keyboardMouseDevice && _keyboardMouseDevice->isActive()) {
         _keyboardMouseDevice->touchUpdateEvent(event);
     }
     if (_touchscreenDevice && _touchscreenDevice->isActive()) {
@@ -3059,7 +3050,7 @@ void Application::touchBeginEvent(QTouchEvent* event) {
         return;
     }
 
-    if (_keyboardMouseDevice->isActive()) {
+    if (_keyboardMouseDevice && _keyboardMouseDevice->isActive()) {
         _keyboardMouseDevice->touchBeginEvent(event);
     }
     if (_touchscreenDevice && _touchscreenDevice->isActive()) {
@@ -3074,12 +3065,15 @@ void Application::touchEndEvent(QTouchEvent* event) {
     _controllerScriptingInterface->emitTouchEndEvent(thisEvent); // send events to any registered scripts
     _lastTouchEvent = thisEvent;
 
+#ifdef ANDROID
+    setFullscreen(nullptr);
+#endif
     // if one of our scripts have asked to capture this event, then stop processing it
     if (_controllerScriptingInterface->isTouchCaptured()) {
         return;
     }
 
-    if (_keyboardMouseDevice->isActive()) {
+    if (_keyboardMouseDevice && _keyboardMouseDevice->isActive()) {
         _keyboardMouseDevice->touchEndEvent(event);
     }
     if (_touchscreenDevice && _touchscreenDevice->isActive()) {
@@ -3538,7 +3532,7 @@ void Application::init() {
         [](){
             qCDebug(interfaceapp) << "Home sandbox does not appear to be running, going to Entry.";
             //DependencyManager::get<AddressManager>()->goToEntry();
-            DependencyManager::get<AddressManager>()->handleLookupString("hifi://192.168.1.100/0.0,0.0,-200.0");
+            DependencyManager::get<AddressManager>()->handleLookupString("hifi://android/0.0,0.0,-200");
 
         });
     } else {
