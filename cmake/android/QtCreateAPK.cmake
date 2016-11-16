@@ -150,11 +150,13 @@ macro(qt_create_apk)
     
   )
 
-  # copy gvr lib - TODO - improve it so it does not depend on this hardcoded path! This is the path of the [gvr-]common library project folder
-  add_custom_target(
-    ${TARGET_NAME}-copy-gvr
-    COMMAND ${CMAKE_COMMAND} -E copy_directory "/Users/gcalero1984/Documents/workspace-hifi/gvr-common" "${ANDROID_APK_BUILD_DIR}/../gvr-common"
-  )
+  # download the protobuf-javanano jar if necessary
+  set(PROTOBUF_JAVANANO_JAR "${ANDROID_APK_BUILD_DIR}/libs/protobuf-javanano-3.0.0-alpha-7.jar")
+  if (NOT EXISTS ${PROTOBUF_JAVANANO_JAR})
+    file(DOWNLOAD "https://repo1.maven.org/maven2/com/google/protobuf/nano/protobuf-javanano/3.0.0-alpha-7/protobuf-javanano-3.0.0-alpha-7.jar"
+                  "${PROTOBUF_JAVANANO_JAR}"
+                  EXPECTED_HASH MD5=a5bf5dced93ffd107aa0c1f0e6390d81)
+  endif ()
 
   # handle setup for ndk-gdb
   add_custom_target(${TARGET_NAME}-gdb DEPENDS ${TARGET_NAME})
@@ -185,7 +187,7 @@ macro(qt_create_apk)
   # use androiddeployqt to create the apk
   add_custom_target(${TARGET_NAME}-apk
     COMMAND ${ANDROID_DEPLOY_QT} --input "${TARGET_NAME}-deployment.json" --output "${ANDROID_APK_OUTPUT_DIR}" --android-platform android-${ANDROID_API_LEVEL} ${ANDROID_DEPLOY_QT_INSTALL} --verbose --deployment bundled "\\${ARGS}"
-    DEPENDS ${TARGET_NAME} ${TARGET_NAME}-copy-res ${TARGET_NAME}-copy-assets ${TARGET_NAME}-copy-java ${TARGET_NAME}-copy-libs ${TARGET_NAME}-gdb ${TARGET_NAME}-copy-resources ${TARGET_NAME}-copy-scripts ${TARGET_NAME}-copy-gvr
+    DEPENDS ${TARGET_NAME} ${TARGET_NAME}-copy-res ${TARGET_NAME}-copy-assets ${TARGET_NAME}-copy-java ${TARGET_NAME}-copy-libs ${TARGET_NAME}-gdb ${TARGET_NAME}-copy-resources ${TARGET_NAME}-copy-scripts
   )
   
   # rename the APK if the caller asked us to
