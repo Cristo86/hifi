@@ -30,7 +30,9 @@ public:
     void setContainer(PluginContainer* container) { _container = container; }
     #if defined(ANDROID) 
     void loadDisplayPlugins(DisplayPlugin* pool[]);
-    DisplayPluginList _androidPlugins;
+    void loadInputPlugins(InputPlugin* pool[]);
+    DisplayPluginList _displayPlugins;
+    InputPluginList _inputPlugins;
     #endif
 private:
     PluginContainer* _container { nullptr };

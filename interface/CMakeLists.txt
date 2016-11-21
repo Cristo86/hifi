@@ -176,6 +176,8 @@ endif()
 
 if (NOT ANDROID)
   set(NON_ANDROID_LIBRARIES steamworks-wrapper)
+else()
+  set(ANDROID_LIBRARIES daydream)
 endif ()
 
 # link required hifi libraries
@@ -201,6 +203,7 @@ endif ()
     controllers plugins
     ui-plugins display-plugins input-plugins
     ${NON_ANDROID_LIBRARIES}
+    ${ANDROID_LIBRARIES}
   )
 #endif ()
 
