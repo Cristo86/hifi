@@ -162,18 +162,24 @@ namespace render {
             for (size_t i = 0; i < NUM_FILTERS; i++) {
                 outItems[i].template edit<ItemBounds>().clear();
             }
-
+            //debug stuff
+            int count0 = 0;
+            int count1 = 0;
             // For each item, filter it into one bucket
             for (auto itemBound : inItems) {
                 auto& item = scene->getItem(itemBound.id);
                 auto itemKey = item.getKey();
                 for (size_t i = 0; i < NUM_FILTERS; i++) {
                     if (_filters[i].test(itemKey)) {
+                        if (i==0) count0++;
+                        if (i==1) count1++;
                         outItems[i].template edit<ItemBounds>().emplace_back(itemBound);
                         break;
                     }
                 }
             }
+            if (NUM_FILTERS >= 2)
+                qDebug() << "[DRAW] MultiFilterItem result: OPAQUE_SHAPE_BUCKET: " << count0 << " TRANSPARENT_SHAPE_BUCKET: " << count1;// << " LIGHT_BUCKET: " << outItems[i].size();
         }
     };
 }

@@ -638,6 +638,7 @@ void Model::setLayeredInFront(bool layered, std::shared_ptr<render::Scene> scene
 bool Model::addToScene(std::shared_ptr<render::Scene> scene,
                        render::PendingChanges& pendingChanges,
                        render::Item::Status::Getters& statusGetters) {
+    qDebug() << "[TELEPORT] Model::addToScene _url " << _url;
     bool readyToRender = _collisionGeometry || isLoaded();
     if (!_addedToScene && readyToRender) {
         createRenderItemSet();
@@ -1302,6 +1303,7 @@ AABox Model::getRenderableMeshBound() const {
 }
 
 void Model::createRenderItemSet() {
+    qDebug() << "[TELEPORT] createRenderItemSet() _url: " << _url;
     if (_collisionGeometry) {
         if (_collisionRenderItemsSet.empty()) {
             createCollisionRenderItemSet();

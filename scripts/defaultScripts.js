@@ -63,6 +63,7 @@ if (!App.isAndroid()) {
         "system/controllers/squeezeHands.js",
         "system/controllers/grab.js",
         "system/controllers/teleport.js",
+        "system/controllers/debugteleport.js",
         "system/controllers/toggleAdvancedMovementForHandControllers.js",
         "system/dialTone.js",
         "system/firstPersonHMD.js",

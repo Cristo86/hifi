@@ -47,11 +47,19 @@ RenderForwardTask::RenderForwardTask(RenderFetchCullSortTask::Output items) {
     const auto framebuffer = addJob<PrepareFramebuffer>("PrepareFramebuffer");
 
     addJob<Draw>("DrawOpaques", opaques, shapePlumber);
+    addJob<DrawT>("DrawTransparents", transparents, shapePlumber);
     addJob<Stencil>("Stencil");
     addJob<DrawBackground>("DrawBackground", background);
 
     // Bounds do not draw on stencil buffer, so they must come last
     addJob<DrawBounds>("DrawBounds", opaques);
+    const auto lightingModel = addJob<MakeLightingModel>("LightingModel");
+
+    // Overlays
+    const auto overlayOpaquesInputs = DrawOverlay3D::Inputs(overlayOpaques, lightingModel).hasVarying();
+    const auto overlayTransparentsInputs = DrawOverlay3D::Inputs(overlayTransparents, lightingModel).hasVarying();
+    //addJob<DrawOverlay3D>("DrawOverlay3DOpaque", overlayOpaquesInputs, true);
+    //addJob<DrawOverlay3D>("DrawOverlay3DTransparent", overlayTransparentsInputs, false);
 
     // Blit!
     addJob<Blit>("Blit", framebuffer);
@@ -101,7 +109,29 @@ void PrepareFramebuffer::run(const SceneContextPointer& sceneContext, const Rend
 void Draw::run(const SceneContextPointer& sceneContext, const RenderContextPointer& renderContext,
         const Inputs& items) {
     RenderArgs* args = renderContext->args;
+    qDebug() << "[DRAW] Draw opaques count: " << items.size();
+    gpu::doInBatch(args->_context, [&](gpu::Batch& batch) {
+        args->_batch = &batch;
 
+        // Setup projection
+        glm::mat4 projMat;
+        Transform viewMat;
+        args->getViewFrustum().evalProjectionMatrix(projMat);
+        args->getViewFrustum().evalViewTransform(viewMat);
+        batch.setProjectionTransform(projMat);
+        batch.setViewTransform(viewMat);
+        batch.setModelTransform(Transform());
+
+        // Render items
+        renderStateSortShapes(sceneContext, renderContext, _shapePlumber, items, -1);
+    });
+    args->_batch = nullptr;
+}
+
+void DrawT::run(const SceneContextPointer& sceneContext, const RenderContextPointer& renderContext,
+        const Inputs& items) {
+    RenderArgs* args = renderContext->args;
+    qDebug() << "[DRAW] Draw transparents count: " << items.size();
     gpu::doInBatch(args->_context, [&](gpu::Batch& batch) {
         args->_batch = &batch;
 

@@ -76,6 +76,7 @@ void ModelOverlay::render(RenderArgs* args) {
     render::ScenePointer scene = qApp->getMain3DScene();
     render::PendingChanges pendingChanges;
     if (_model->needsFixupInScene()) {
+        qDebug() << "[TELEPORT] ModelOverlay::render needsFixupInScene _url " << _model->getURL();
         _model->removeFromScene(scene, pendingChanges);
         _model->addToScene(scene, pendingChanges);
     }

@@ -10,7 +10,7 @@
 
 (function() { // BEGIN LOCAL_SCOPE
 
-var logEnabled = false;
+var logEnabled = true;
 function printd(str) {
     if (logEnabled)
         print("teleport.js " + str);
@@ -158,7 +158,7 @@ function Teleporter() {
             dimensions: TARGET_MODEL_DIMENSIONS,
             visible: visible
         };
-
+        printd("createTargetOverlay url " + targetOverlayProps.url + " visible " + visible);
         _this.targetOverlay = Overlays.addOverlay("model", targetOverlayProps);
 
     };
@@ -211,7 +211,7 @@ function Teleporter() {
         if (this.targetOverlay === null) {
             return;
         }
-
+        printd("deleteTargetOverlay");
         Overlays.deleteOverlay(this.targetOverlay);
         this.intersection = null;
         this.targetOverlay = null;
@@ -221,7 +221,7 @@ function Teleporter() {
         if (this.targetOverlay === null) {
             return;
         }
-
+        printd("hideTargetOverlay (sets visible to false)");
         this.intersection = null;
         Overlays.editOverlay(this.targetOverlay, { visible: false });
     }
@@ -494,10 +494,10 @@ function Teleporter() {
             y: intersection.intersection.y + TARGET_MODEL_DIMENSIONS.y / 2,
             z: intersection.intersection.z
         };
-
+        printd("updateTargetOverlay position " + position.x + ", " + position.y + ", " + position.z);
         this.tooClose = isValidTeleportLocation(position, intersection.surfaceNormal);
         var towardUs = Quat.fromPitchYawRollDegrees(0, euler.y, 0);
-
+        printd("updateTargetOverlay rotation " + JSON.stringify(rotation));
         Overlays.editOverlay(this.targetOverlay, {
             visible: true,
             position: position,

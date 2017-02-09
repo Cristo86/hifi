@@ -48,6 +48,19 @@ private:
     render::ShapePlumberPointer _shapePlumber;
 };
 
+class DrawT {
+public:
+    using Inputs = render::ItemBounds;
+    using JobModel = render::Job::ModelI<DrawT, Inputs>;
+
+    DrawT(const render::ShapePlumberPointer& shapePlumber) : _shapePlumber(shapePlumber) {}
+    void run(const render::SceneContextPointer& sceneContext, const render::RenderContextPointer& renderContext,
+            const Inputs& items);
+
+private:
+    render::ShapePlumberPointer _shapePlumber;
+};
+
 class Stencil {
 public:
     using JobModel = render::Job::Model<Stencil>;
