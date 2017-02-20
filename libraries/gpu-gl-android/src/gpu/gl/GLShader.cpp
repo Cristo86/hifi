@@ -85,6 +85,7 @@ GLShader* compileBackendShader(GLBackend& backend, const Shader& shader) {
         std::string shaderDefines = glslVersion + "\n" + DOMAIN_DEFINES[shader.getType()] + "\n" + VERSION_DEFINES[version] 
         + "\n" + "#extension GL_EXT_texture_buffer : enable"
         + "\nprecision lowp float; // check precision 2"
+        + "\nprecision lowp sampler2DShadow; // check precision 2"
         + "\nprecision lowp samplerBuffer;";
         // TODO Delete bool result = compileShader(shaderDomain, shaderSource, shaderDefines, shaderObject.glshader, shaderObject.glprogram);
 #ifdef SEPARATE_PROGRAM
