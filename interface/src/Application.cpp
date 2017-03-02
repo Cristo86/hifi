@@ -1494,7 +1494,7 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer, bo
     //DependencyManager::get<AddressManager>()->handleLookupString("hifi://android/0.0,0.0,-200");
     //DependencyManager::get<AddressManager>()->handleLookupString("dev-mobile.highfidelity.io/0.257461,0,-5.11505");
     //DependencyManager::get<AddressManager>()->handleLookupString("dev-mobile.highfidelity.io/6.8,0.1,-24.1");
-    DependencyManager::get<AddressManager>()->handleLookupString("dev-mobile.highfidelity.io/2000,0.2,2000");
+    DependencyManager::get<AddressManager>()->handleLookupString("dev-mobile.highfidelity.io/2004.27,1.03495,2002.72");
     //DependencyManager::get<AddressManager>()->handleLookupString("dev-mobile.highfidelity.io/10.9,0.2,-18.3");
 #else
         if (shouldGoToTutorial) {

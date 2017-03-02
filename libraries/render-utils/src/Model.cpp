@@ -670,7 +670,7 @@ bool Model::addToScene(std::shared_ptr<render::Scene> scene,
                     renderPayload->addStatusGetters(statusGetters);
                 }
                 pendingChanges.resetItem(item, renderPayload);
-
+                qDebug() << "[MODEL] " << _url << " ShapeKey " << renderItem.get()->getShapeKey();
                 hasTransparent = hasTransparent || renderItem.get()->getShapeKey().isTranslucent();
                 verticesCount += renderItem.get()->getVerticesCount();
                 _modelMeshRenderItems.insert(item, renderPayload);

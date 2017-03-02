@@ -266,9 +266,17 @@ void initForwardPipelines(render::ShapePlumber& plumber) {
         skinModelNormalMapVertex, modelNormalSpecularMapPixel);
 
     auto modelTranslucentPixel = gpu::Shader::createPixel(std::string(model_translucent_frag));
+    // Translucents
+    addPipeline(
+        Key::Builder().withTranslucent(),
+        modelVertex, modelTranslucentPixel);
     addPipeline(
         Key::Builder().withTranslucent().withTangents(),
         modelNormalMapVertex, modelTranslucentPixel);
+    addPipeline(
+    Key::Builder().withSkinned().withTranslucent().withTangents(),
+    skinModelNormalMapVertex, modelTranslucentPixel);
+
 }
 
 void addPlumberPipeline(ShapePlumber& plumber,
