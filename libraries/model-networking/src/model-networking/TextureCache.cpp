@@ -306,6 +306,7 @@ private:
 
 void NetworkTexture::downloadFinished(const QByteArray& data) {
     // send the reader off to the thread pool
+    qDebug() << "[DRAW] NetworkTexture::downloadFinished _url: " << _url.toString();
     QThreadPool::globalInstance()->start(new ImageReader(_self, data, _url));
 }
 
@@ -349,6 +350,7 @@ void ImageReader::listSupportedImageFormats() {
 }
 
 void ImageReader::run() {
+    qDebug() << "[DRAW] ImageReader::run for: " << _url.toString();
     DependencyManager::get<StatTracker>()->decrementStat("PendingProcessing");
 
     CounterStat counter("Processing");
@@ -388,6 +390,13 @@ void ImageReader::run() {
         }
         return;
     }
+
+    // DEBUG CLD saving texture?..
+    /*QString saveAux = QString::fromUtf8("/storage/emulated/0/textures/") + QString::fromStdString(filename);
+    qDebug() << "[DRAW] ImageReader::run saving image.. " << saveAux;
+    bool savedAux = image.save(saveAux);//, "PNG", -1);
+    qDebug() << "[DRAW] ImageReader::run saving image.. " << saveAux << (savedAux?" OK": " FAILED");*/
+
     gpu::TexturePointer texture = nullptr;
     {
         // Double-check the resource still exists between long operations.
@@ -408,6 +417,7 @@ void ImageReader::run() {
     if (!resource) {
         qCWarning(modelnetworking) << "Abandoning load of" << _url << "; could not get strong ref";
     } else {
+        qDebug() << "[DRAW] ImageReader::run invoking setImage.. " << _url.toString();
         QMetaObject::invokeMethod(resource.data(), "setImage",
             Q_ARG(gpu::TexturePointer, texture),
             Q_ARG(int, originalWidth), Q_ARG(int, originalHeight));
@@ -426,13 +436,16 @@ void NetworkTexture::setImage(gpu::TexturePointer texture, int originalWidth,
         _width = texture->getWidth();
         _height = texture->getHeight();
         setSize(texture->getStoredSize());
+        qDebug() << "[DRAW] NetworkTexture::setImage Texture size " << _width << "x" << _height;
     } else {
         // FIXME: If !gpuTexture, we failed to load!
         _width = _height = 0;
         qWarning() << "Texture did not load";
+        qDebug() << "[DRAW] NetworkTexture::setImage Texture did not load";
     }
 
     finishedLoading(true);
-
+    qDebug() << "[DRAW] NetworkTexture::setImage finishedLoading";
     emit networkTextureCreated(qWeakPointerCast<NetworkTexture, Resource> (_self));
+    qDebug() << "[DRAW] NetworkTexture::setImage networkTextureCreated emitted";
 }

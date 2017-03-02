@@ -30,8 +30,11 @@ void Frame::finish() {
 }
 
 void Frame::preRender() {
+    {
+    PROFILE_RANGE_EX(render, "preRenderForEach", 0xffff0000, 1);
     for (auto& update : bufferUpdates) {
         update.apply();
+    }
     }
     bufferUpdates.clear();
 }

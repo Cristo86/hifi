@@ -572,20 +572,22 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer, bo
     _lastFaceTrackerUpdate(0)
 {
 #ifdef ANDROID
-    	QFile scriptsDest(defaultScriptsLocation().toString());
-    	if (!scriptsDest.exists()) {
-	        qDebug() << "Copying scripts dir";
-	        copyDirDeep("assets:/scripts", defaultScriptsLocation().toLocalFile());
+    QLoggingCategory::setFilterRules("trace.*=false\ntrace.render=true\ntrace.render_gpu_gl=true\ntrace.render.details=true\ntrace.render_gpu_gl.details=true\ntrace.render_gpu=true\ntrace.render_gpu.details=true");
+    //QLoggingCategory::setFilterRules("trace.*=false\ntrace.render=true\ntrace.render_gpu_gl=true");
+    QFile scriptsDest(defaultScriptsLocation().toString());
+    if (!scriptsDest.exists()) {
+	    qDebug() << "Copying scripts dir";
+	    copyDirDeep("assets:/scripts", defaultScriptsLocation().toLocalFile());
 	}
-
-    	qDebug() << "Resources path " << PathUtils::resourcesPath();
-    	QFile resourcesDest(PathUtils::resourcesPath());
-    	if (!resourcesDest.exists()) {
-        	qDebug() << "Copying resources dir";
-        	copyDirDeep("assets:/resources", PathUtils::resourcesPath());
-    	}
+    qDebug() << "Resources path " << PathUtils::resourcesPath();
+    QFile resourcesDest(PathUtils::resourcesPath());
+    if (!resourcesDest.exists()) {
+    	qDebug() << "Copying resources dir";
+    	copyDirDeep("assets:/resources", PathUtils::resourcesPath());
+    }
+    DependencyManager::get<tracing::Tracer>()->startTracing();
 #else
-        auto steamClient = PluginManager::getInstance()->getSteamClientPlugin();
+    auto steamClient = PluginManager::getInstance()->getSteamClientPlugin();
     setProperty(hifi::properties::STEAM, (steamClient && steamClient->isRunning()));
     setProperty(hifi::properties::CRASHED, _previousSessionCrashed);
 
@@ -1278,6 +1280,22 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer, bo
     static controller::Pose lastLeftHandPose = myAvatar->getLeftHandPose();
     static controller::Pose lastRightHandPose = myAvatar->getRightHandPose();
 
+#ifdef ANDROID
+    QTimer* saveProfilingTimer = new QTimer(this);
+    saveProfilingTimer->setInterval(30 * 1000);
+    connect(saveProfilingTimer, &QTimer::timeout, this, [this]() {
+        auto tracer = DependencyManager::get<tracing::Tracer>();
+        qDebug() << "[PROFILING] Tracer " << tracer;
+        static int cnt=0;
+        cnt++;
+        auto outputFile =  QString("/storage/emulated/0/profile_%1.json.gz").arg(cnt);
+        qDebug() << "[  ] serialize profiling";
+        tracer->serialize(outputFile);
+        qDebug() << "[PROFILING] serialize profiling end " << outputFile;
+    });
+    saveProfilingTimer->start();
+#endif
+
     // Periodically send fps as a user activity event
     QTimer* sendStatsTimer = new QTimer(this);
     sendStatsTimer->setInterval(SEND_STATS_INTERVAL_MS);  // 10s, Qt::CoarseTimer acceptable
@@ -1492,7 +1510,8 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer, bo
 
 #ifdef ANDROID
     //DependencyManager::get<AddressManager>()->handleLookupString("hifi://android/0.0,0.0,-200");
-    //DependencyManager::get<AddressManager>()->handleLookupString("dev-mobile.highfidelity.io/0.257461,0,-5.11505");
+    //DependencyManager::get<AddressManager>()->handleLookupString("dev-mobile.highfidelity.io/0.257461,0,-5.11505"); // main place?
+    //DependencyManager::get<AddressManager>()->handleLookupString("dev-mobile.highfidelity.io/-2.4,0.2,-4.9"); // main place? looking at apts
     //DependencyManager::get<AddressManager>()->handleLookupString("dev-mobile.highfidelity.io/6.8,0.1,-24.1");
     DependencyManager::get<AddressManager>()->handleLookupString("dev-mobile.highfidelity.io/2004.27,1.03495,2002.72");
     //DependencyManager::get<AddressManager>()->handleLookupString("dev-mobile.highfidelity.io/10.9,0.2,-18.3");
@@ -2598,8 +2617,26 @@ bool Application::event(QEvent* event) {
     // Presentation/painting logic
     // TODO: Decouple presentation and painting loops
     static bool isPaintingThrottled = false;
+
+    //static uint presentsCount = 0;
+    //static uint presentsPainted = 0;
+    //static uint presentsThrottled = 0;
+    //static uint presentsBeforePaint = 0;
+
     if ((int)event->type() == (int)Present) {
+        /*presentsCount++;
+        if (presentsCount>100) {
+            qDebug() << "[PROFILING] painted " << presentsPainted << "/" << presentsCount 
+                     << " = " << ((float) presentsPainted/presentsCount)
+                     << " presentsThrottled " << presentsThrottled
+                     << " falseShouldPaint " << (presentsBeforePaint-presentsPainted);
+            presentsCount = 0;
+            presentsPainted = 0;
+            presentsThrottled = 0;
+            presentsBeforePaint = 0;
+        }*/
         if (isPaintingThrottled) {
+            //presentsThrottled++;
             // If painting (triggered by presentation) is hogging the main thread,
             // repost as low priority to avoid hanging the GUI.
             // This has the effect of allowing presentation to exceed the paint budget by X times and
@@ -2612,9 +2649,11 @@ bool Application::event(QEvent* event) {
         }
 
         float nsecsElapsed = (float)_lastTimeUpdated.nsecsElapsed();
+        //presentsBeforePaint++;
         if (shouldPaint(nsecsElapsed)) {
             _lastTimeUpdated.start();
             idle(nsecsElapsed);
+            //presentsPainted++;
             postEvent(this, new QEvent(static_cast<QEvent::Type>(Paint)), Qt::HighEventPriority);
         }
         isPaintingThrottled = true;

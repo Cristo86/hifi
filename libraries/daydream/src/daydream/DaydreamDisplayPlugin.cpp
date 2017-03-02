@@ -67,8 +67,10 @@ void DaydreamDisplayPlugin::internalPresent() {
 
     gvr::Mat4f head_view = gvrState->_gvr_api->GetHeadSpaceFromStartSpaceRotation(pred_time);
     frame.Unbind();
+    {
+    PROFILE_RANGE_EX(render, "gvrFrameSubmit", 0xff33ff22, (uint64_t)presentCount())
     frame.Submit(gvrState->_viewport_list, head_view);
-
+    }
     swapBuffers();
 }
 

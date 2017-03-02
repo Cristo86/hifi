@@ -71,6 +71,7 @@ RenderForwardTask::RenderForwardTask(RenderFetchCullSortTask::Output items) {
 
 void PrepareFramebuffer::run(const SceneContextPointer& sceneContext, const RenderContextPointer& renderContext,
         gpu::FramebufferPointer& framebuffer) {
+    PROFILE_RANGE_EX(render, "PrepareFramebuffer", 0xff550000, (uint64_t)1)
     auto framebufferCache = DependencyManager::get<FramebufferCache>();
     auto framebufferSize = framebufferCache->getFrameBufferSize();
     glm::uvec2 frameSize(framebufferSize.width(), framebufferSize.height());
@@ -112,6 +113,7 @@ void PrepareFramebuffer::run(const SceneContextPointer& sceneContext, const Rend
 
 void Draw::run(const SceneContextPointer& sceneContext, const RenderContextPointer& renderContext,
         const Inputs& items) {
+    PROFILE_RANGE_EX(render, "Draw", 0xff005500, (uint64_t)1)
     RenderArgs* args = renderContext->args;
     qDebug() << "[DRAW] Draw opaques count: " << items.size();
     gpu::doInBatch(args->_context, [&](gpu::Batch& batch) {
@@ -134,6 +136,7 @@ void Draw::run(const SceneContextPointer& sceneContext, const RenderContextPoint
 
 void DrawT::run(const SceneContextPointer& sceneContext, const RenderContextPointer& renderContext,
         const Inputs& items) {
+    PROFILE_RANGE_EX(render, "DrawT", 0xff000055, (uint64_t)1)
     RenderArgs* args = renderContext->args;
     qDebug() << "[DRAW] Draw transparents count: " << items.size();
     gpu::doInBatch(args->_context, [&](gpu::Batch& batch) {
@@ -155,6 +158,7 @@ void DrawT::run(const SceneContextPointer& sceneContext, const RenderContextPoin
 }
 
 void DrawTransparentDeferred::run(const SceneContextPointer& sceneContext, const RenderContextPointer& renderContext, const Inputs& inputs) {
+    PROFILE_RANGE_EX(render, "DrawTransparentDeferred", 0xff555500, (uint64_t)1)
     //qDebug() << "[DRAW] DrawTransparentDeferred transparents inputs: " << inputs.size();
     assert(renderContext->args);
     assert(renderContext->args->hasViewFrustum());
@@ -186,10 +190,12 @@ void DrawTransparentDeferred::run(const SceneContextPointer& sceneContext, const
         // Setup lighting model for all items;
         batch.setUniformBuffer(render::ShapePipeline::Slot::LIGHTING_MODEL, lightingModel->getParametersBuffer());
 
+        // debug CLD
+        // batch.setResourceTexture(render::ShapePipeline::Slot::MAP::ALBEDO, DependencyManager::get<TextureCache>()->getWhiteTexture());
+
         renderShapes(sceneContext, renderContext, _shapePlumber, inItems, -1);//_maxDrawn);
         args->_batch = nullptr;
     });
-
     //config->setNumDrawn((int)inItems.size());
 }
 
@@ -214,6 +220,7 @@ const gpu::PipelinePointer Stencil::getPipeline() {
 }
 
 void Stencil::run(const SceneContextPointer& sceneContext, const RenderContextPointer& renderContext) {
+    PROFILE_RANGE_EX(render, "Stencil", 0xff005555, (uint64_t)1)
     RenderArgs* args = renderContext->args;
 
     gpu::doInBatch(args->_context, [&](gpu::Batch& batch) {
@@ -231,6 +238,7 @@ void Stencil::run(const SceneContextPointer& sceneContext, const RenderContextPo
 
 void DrawBackground::run(const SceneContextPointer& sceneContext, const RenderContextPointer& renderContext,
         const Inputs& background) {
+    PROFILE_RANGE_EX(render, "DrawBackground", 0xff555555, (uint64_t)1)
     RenderArgs* args = renderContext->args;
 
     gpu::doInBatch(args->_context, [&](gpu::Batch& batch) {
@@ -278,6 +286,7 @@ const gpu::PipelinePointer DrawBounds::getPipeline() {
 
 void DrawBounds::run(const SceneContextPointer& sceneContext, const RenderContextPointer& renderContext,
         const Inputs& items) {
+    PROFILE_RANGE_EX(render, "DrawBounds", 0xffaa5555, (uint64_t)1)
     RenderArgs* args = renderContext->args;
 
     gpu::doInBatch(args->_context, [&](gpu::Batch& batch) {

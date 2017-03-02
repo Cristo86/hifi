@@ -563,22 +563,26 @@ void OpenGLDisplayPlugin::compositeLayers() {
     updateCompositeFramebuffer();
 
     {
-        PROFILE_RANGE_EX(render_detail, "compositeScene", 0xff0077ff, (uint64_t)presentCount())
+        //PROFILE_RANGE_EX(render_detail, "compositeScene", 0xff0077ff, (uint64_t)presentCount())
+        PROFILE_RANGE_EX(render, "compositeScene", 0xff0077ff, (uint64_t)presentCount())
         compositeScene();
     }
 
     {
-        PROFILE_RANGE_EX(render_detail, "compositeOverlay", 0xff0077ff, (uint64_t)presentCount())
+        //PROFILE_RANGE_EX(render_detail, "compositeOverlay", 0xff0077ff, (uint64_t)presentCount())
+        PROFILE_RANGE_EX(render, "compositeOverlay", 0xff0077ff, (uint64_t)presentCount())
         compositeOverlay();
     }
     auto compositorHelper = DependencyManager::get<CompositorHelper>();
     if (compositorHelper->getReticleVisible()) {
-        PROFILE_RANGE_EX(render_detail, "compositePointer", 0xff0077ff, (uint64_t)presentCount())
+        //PROFILE_RANGE_EX(render_detail, "compositePointer", 0xff0077ff, (uint64_t)presentCount())
+        PROFILE_RANGE_EX(render, "compositePointer", 0xff0077ff, (uint64_t)presentCount())
         compositePointer();
     }
 
     {
-        PROFILE_RANGE_EX(render_detail, "compositeExtra", 0xff0077ff, (uint64_t)presentCount())
+        //PROFILE_RANGE_EX(render_detail, "compositeExtra", 0xff0077ff, (uint64_t)presentCount())
+        PROFILE_RANGE_EX(render, "compositeExtra", 0xff0077ff, (uint64_t)presentCount())
         compositeExtra();
     }
 }
@@ -599,7 +603,10 @@ void OpenGLDisplayPlugin::internalPresent() {
 
 void OpenGLDisplayPlugin::present() {
     PROFILE_RANGE_EX(render, __FUNCTION__, 0xffffff00, (uint64_t)presentCount())
+    {
+    PROFILE_RANGE_EX(render, "updateFrameData", 0xff55ff11, (uint64_t)presentCount())
     updateFrameData();
+    }
     incrementPresentCount();
 
     {
@@ -629,7 +636,7 @@ void OpenGLDisplayPlugin::present() {
 
         // Take the composite framebuffer and send it to the output device
         {
-            PROFILE_RANGE_EX(render, "internalPresent", 0xff00ffff, (uint64_t)presentCount())
+            PROFILE_RANGE_EX(render, "OpenGLDPinternalPresent", 0xff00ffff, (uint64_t)presentCount())
             internalPresent();
         }
 
@@ -655,6 +662,7 @@ float OpenGLDisplayPlugin::renderRate() const {
 
 
 void OpenGLDisplayPlugin::swapBuffers() {
+    PROFILE_RANGE_EX(render, "swapBuffers", 0xffee4400, 1)
     static auto context = _container->getPrimaryWidget()->context();
     context->swapBuffers();
 }
@@ -754,7 +762,10 @@ gpu::gl::GLBackend* OpenGLDisplayPlugin::getGLBackend() {
 void OpenGLDisplayPlugin::render(std::function<void(gpu::Batch& batch)> f) {
     gpu::Batch batch;
     f(batch);
+    {
+    PROFILE_RANGE_EX(render, "renderExecuteBatch", 0xff4488cc, 1)
     _gpuContext->executeBatch(batch);
+    }
 }
 
 

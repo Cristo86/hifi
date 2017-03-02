@@ -10,6 +10,9 @@
 //
 #include "GLBackend.h"
 
+#include <androidhacks.h>
+#include <QString>
+
 #include <mutex>
 #include <queue>
 #include <list>
@@ -168,13 +171,15 @@ GLBackend::~GLBackend() {
 }
 
 void GLBackend::renderPassTransfer(const Batch& batch) {
+    //PROFILE_RANGE_EX(render, "renderPassTransfer", 0xffffaaaa, 1);
     const size_t numCommands = batch.getCommands().size();
     const Batch::Commands::value_type* command = batch.getCommands().data();
     const Batch::CommandOffsets::value_type* offset = batch.getCommandOffsets().data();
 
     _inRenderTransferPass = true;
     { // Sync all the buffers
-        PROFILE_RANGE(render_gpu_gl, "syncGPUBuffer");
+        PROFILE_RANGE_EX(render, "syncGPUBuffer", 0xffaaffaa, 1);
+        //PROFILE_RANGE(render_gpu_gl, "syncGPUBuffer");
 
         for (auto& cached : batch._buffers._items) {
             if (cached._data) {
@@ -184,7 +189,8 @@ void GLBackend::renderPassTransfer(const Batch& batch) {
     }
 
     { // Sync all the buffers
-        PROFILE_RANGE(render_gpu_gl, "syncCPUTransform");
+        PROFILE_RANGE_EX(render, "syncCPUTransform", 0xffaaaaff, 1);
+        //PROFILE_RANGE(render_gpu_gl, "syncCPUTransform");
         _transform._cameras.clear();
         _transform._cameraOffsets.clear();
 
@@ -216,7 +222,8 @@ void GLBackend::renderPassTransfer(const Batch& batch) {
     }
 
     { // Sync the transform buffers
-        PROFILE_RANGE(render_gpu_gl, "syncGPUTransform");
+        //PROFILE_RANGE(render_gpu_gl, "syncGPUTransform");
+        PROFILE_RANGE_EX(render, "syncGPUTransform", 0xff0000ff, 1);
         transferTransformState(batch);
     }
 
@@ -230,6 +237,7 @@ void GLBackend::renderPassDraw(const Batch& batch) {
     const Batch::Commands::value_type* command = batch.getCommands().data();
     const Batch::CommandOffsets::value_type* offset = batch.getCommandOffsets().data();
     for (_commandIndex = 0; _commandIndex < numCommands; ++_commandIndex) {
+        //PROFILE_RANGE_EX(render, "eachCommand", 0xffff0000, (uint64_t)_commandIndex);
         switch (*command) {
             // Ignore these commands on this pass, taken care of in the transfer pass
             // Note we allow COMMAND_setViewportTransform to occur in both passes
@@ -248,18 +256,23 @@ void GLBackend::renderPassDraw(const Batch& batch) {
             case Batch::COMMAND_multiDrawIndexedIndirect: {
                 // updates for draw calls
                 ++_currentDraw;
+                {//PROFILE_RANGE_EX(render, "updates", 0xff00ff00, (uint64_t)_commandIndex);
                 updateInput();
                 updateTransform(batch);
                 updatePipeline();
-                
+                }
+                {//PROFILE_RANGE_EX(render, "commandCall", 0xff0000ff, (uint64_t)_commandIndex);
                 CommandCall call = _commandCalls[(*command)];
                 (this->*(call))(batch, *offset);
+                }
                 break;
             }
             default: {
+                {//PROFILE_RANGE_EX(render, QString::fromStdString( "commandCallDefault["+ std::to_string((int)(*command)) +"]" ) , 0xff6666ff, (uint64_t)_commandIndex);
                 CommandCall call = _commandCalls[(*command)];
                 (this->*(call))(batch, *offset);
                 break;
+                }
             }
         }
 
@@ -269,6 +282,7 @@ void GLBackend::renderPassDraw(const Batch& batch) {
 }
 
 void GLBackend::render(const Batch& batch) {
+    PROFILE_RANGE_EX(render, "GLBackendRender", 0xffff00ff, 1);
     _transform._skybox = _stereo._skybox = batch.isSkyboxEnabled();
     // Allow the batch to override the rendering stereo settings
     // for things like full framebuffer copy operations (deferred lighting passes)
@@ -278,12 +292,14 @@ void GLBackend::render(const Batch& batch) {
     }
     
     {
-        PROFILE_RANGE(render_gpu_gl, "Transfer");
+        //PROFILE_RANGE(render_gpu_gl, "Transfer");
+        PROFILE_RANGE_EX(render, "Transfer", 0xff0000ff, 1);
         renderPassTransfer(batch);
     }
 
     {
-        PROFILE_RANGE(render_gpu_gl, _stereo._enable ? "Render Stereo" : "Render");
+        //PROFILE_RANGE(render_gpu_gl, _stereo._enable ? "Render Stereo" : "Render");
+        PROFILE_RANGE_EX(render, _stereo._enable ? "renderPassDrawST" : "renderPassDrawNoST", 0xff00ff00, 1);
         renderPassDraw(batch);
     }
 

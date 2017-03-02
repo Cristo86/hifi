@@ -25,14 +25,21 @@ static bool timeElapsed = false;
 #endif
 
 void GLBackend::do_beginQuery(const Batch& batch, size_t paramOffset) {
+    //PROFILE_RANGE_EX(render, "beginQuery", 0xffaaffaa, 1);
     auto query = batch._queries.get(batch._params[paramOffset]._uint);
-    GLQuery* glquery = syncGPUObject(*query);
+    GLQuery* glquery = NULL;
+    {//PROFILE_RANGE_EX(render, "beginQuery-syncGPUObject", 0xffaaffaa, 1);
+    glquery = syncGPUObject(*query);
+    }
     if (glquery) {
+        //PROFILE_RANGE_EX(render, "beginQuery-glGetInt", 0xffaaffaa, 1);
         //glGetInteger64v(GL_TIMESTAMP_EXT, (GLint64*)&glquery->_batchElapsedTime);
         glquery->_batchElapsedTime = 1;
         if (timeElapsed) {
+            //PROFILE_RANGE_EX(render, "beginQuery-glBeginQuery", 0xffaaffaa, 1);
             glBeginQuery(GL_TIME_ELAPSED_EXT, glquery->_endqo);
         } else {
+            //PROFILE_RANGE_EX(render, "beginQuery-glQueryCounterEXT", 0xffaaffaa, 1);
             if (glQueryCounterEXT != NULL) {
                 glQueryCounterEXT(glquery->_beginqo, GL_TIMESTAMP_EXT);
             }
@@ -43,12 +50,15 @@ void GLBackend::do_beginQuery(const Batch& batch, size_t paramOffset) {
 }
 
 void GLBackend::do_endQuery(const Batch& batch, size_t paramOffset) {
+    //PROFILE_RANGE_EX(render, "endQuery", 0xffaaffaa, 1);
     auto query = batch._queries.get(batch._params[paramOffset]._uint);
     GLQuery* glquery = syncGPUObject(*query);
     if (glquery) {
         if (timeElapsed) {
+            //PROFILE_RANGE_EX(render, "endQuery-glEndQuery", 0xffaaffaa, 1);
             glEndQuery(GL_TIME_ELAPSED_EXT);
         } else {
+            //PROFILE_RANGE_EX(render, "endQuery-glQueryCounterEXT", 0xffaaffaa, 1);
             if (glQueryCounterEXT != NULL) {
                 glQueryCounterEXT(glquery->_endqo, GL_TIMESTAMP_EXT);
             }
@@ -56,9 +66,11 @@ void GLBackend::do_endQuery(const Batch& batch, size_t paramOffset) {
 
         --_queryStage._rangeQueryDepth;
         GLint64 now;
+        {//PROFILE_RANGE_EX(render, "endQuery-glGetInt", 0xffaaffaa, 1);
         //glGetInteger64v(GL_TIMESTAMP_EXT, &now);
-        //glquery->_batchElapsedTime = now - glquery->_batchElapsedTime;
         now = 1;
+        }
+        //glquery->_batchElapsedTime = now - glquery->_batchElapsedTime;
         glquery->_batchElapsedTime = 1;
 
         PROFILE_RANGE_END(render_gpu_gl, glquery->_profileRangeId);
