@@ -2464,6 +2464,9 @@ void Application::paintGL() {
     frame->framebufferRecycler = [](const gpu::FramebufferPointer& framebuffer){
         DependencyManager::get<FramebufferCache>()->releaseFramebuffer(framebuffer);
     };
+    /* DELETE if ( ((float) rand()) / RAND_MAX < 0.1f ) {
+        qDebug() << "[PROFILING] frame batches size: " << frame->batches.size();
+    }*/
     frame->overlay = _applicationOverlay.getOverlayTexture();
     // deliver final scene rendering commands to the display plugin
     {

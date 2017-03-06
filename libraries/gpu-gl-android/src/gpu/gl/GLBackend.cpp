@@ -223,7 +223,7 @@ void GLBackend::renderPassTransfer(const Batch& batch) {
 
     { // Sync the transform buffers
         //PROFILE_RANGE(render_gpu_gl, "syncGPUTransform");
-        PROFILE_RANGE_EX(render, "syncGPUTransform", 0xff0000ff, 1);
+        PROFILE_RANGE_EX(render, "transferTransformState", 0xff0000ff, 1);
         transferTransformState(batch);
     }
 

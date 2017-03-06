@@ -384,9 +384,10 @@ void HmdDisplayPlugin::updateFrameData() {
         _presentHandLasers = _handLasers;
         _presentHandPoses = _handPoses;
         _presentUiModelTransform = _uiModelTransform;
-
+//#ifndef ANDROID
         _presentExtraLaser = _extraLaser;
         _presentExtraLaserStart = _extraLaserStart;
+//#endif
     });
 
     auto compositorHelper = DependencyManager::get<CompositorHelper>();
@@ -455,6 +456,7 @@ void HmdDisplayPlugin::updateFrameData() {
     }
 
     // compute the glow point interesections
+#ifndef ANDROID
     if (_presentExtraLaser.valid()) {
         const vec3& laserDirection = _presentExtraLaser.direction;
         vec3 castStart = _presentExtraLaserStart;
@@ -489,7 +491,7 @@ void HmdDisplayPlugin::updateFrameData() {
             }
         }
     }
-
+#endif
 
     for_each_eye([&](Eye eye) {
         auto modelView = glm::inverse(_currentPresentFrameInfo.presentPose * getEyeToHeadTransform(eye)) * modelMat;
@@ -729,7 +731,7 @@ void HmdDisplayPlugin::compositeExtra() {
                 batch.draw(gpu::TRIANGLE_STRIP, 4, 0);
             }
         });
-
+#ifndef ANDROID
         if (_presentExtraLaser.valid()) {
             const auto& points = _presentExtraLaserPoints;
             _extraLaserUniforms->resize(sizeof(HandLaserData));
@@ -737,6 +739,7 @@ void HmdDisplayPlugin::compositeExtra() {
             batch.setUniformBuffer(LINE_DATA_SLOT, _extraLaserUniforms);
             batch.draw(gpu::TRIANGLE_STRIP, 4, 0);
         }
+#endif
     });
 }
 

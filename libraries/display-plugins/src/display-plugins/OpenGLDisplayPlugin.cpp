@@ -488,6 +488,7 @@ void OpenGLDisplayPlugin::updateFrameData() {
         return;
     }
     withPresentThreadLock([&] {
+        PROFILE_RANGE_EX(render, "updateFrameDataLOCKED", 0xffff00ff, 1)
         if (!_newFrameQueue.empty()) {
             // We're changing frames, so we can cleanup any GL resources that might have been used by the old frame
             _gpuContext->recycle();

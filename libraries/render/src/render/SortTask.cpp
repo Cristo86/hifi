@@ -41,6 +41,7 @@ struct BackToFrontSort {
 };
 
 void render::depthSortItems(const SceneContextPointer& sceneContext, const RenderContextPointer& renderContext, bool frontToBack, const ItemBounds& inItems, ItemBounds& outItems) {
+    PROFILE_RANGE_EX(render, "depthSortItems", 0xff00ff00, 1);
     assert(renderContext->args);
     assert(renderContext->args->hasViewFrustum());
 
@@ -64,7 +65,7 @@ void render::depthSortItems(const SceneContextPointer& sceneContext, const Rende
 
         itemBoundSorts.emplace_back(ItemBoundSort(distance, distance, distance, itemDetails.id, bound));
     }
-
+    {PROFILE_RANGE_EX(render, "stdSort", 0xffaaffaa, 1);
     // sort against Z
     if (frontToBack) {
         FrontToBackSort frontToBackSort;
@@ -73,7 +74,7 @@ void render::depthSortItems(const SceneContextPointer& sceneContext, const Rende
         BackToFrontSort  backToFrontSort;
         std::sort(itemBoundSorts.begin(), itemBoundSorts.end(), backToFrontSort);
     }
-
+    }
     // Finally once sorted result to a list of itemID
     for (auto& item : itemBoundSorts) {
        outItems.emplace_back(ItemBound(item._id, item._bounds));

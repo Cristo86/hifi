@@ -11,6 +11,10 @@
 
 using namespace gpu;
 
+Frame::Frame() {
+    batches.reserve(16);
+}
+
 Frame::~Frame() {
     if (framebuffer && framebufferRecycler) {
         framebufferRecycler(framebuffer);
@@ -31,7 +35,7 @@ void Frame::finish() {
 
 void Frame::preRender() {
     {
-    PROFILE_RANGE_EX(render, "preRenderForEach", 0xffff0000, 1);
+    //PROFILE_RANGE_EX(render, "preRenderForEach", 0xffff0000, 1);
     for (auto& update : bufferUpdates) {
         update.apply();
     }
