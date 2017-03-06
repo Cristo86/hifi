@@ -2474,6 +2474,15 @@ void Application::paintGL() {
         PerformanceTimer perfTimer("pluginOutput");
         _frameCounter.increment();
         displayPlugin->submitFrame(frame);
+        static int submitFrameCounter = 0;
+        static long tsSec = 0L;
+        long currentSec = static_cast<long int> (std::time(nullptr));
+        if (tsSec != currentSec) {
+            qDebug() << "[SIMPLE-METRIC] " << tsSec << " displayPlugin->submitFrames " << submitFrameCounter;
+            submitFrameCounter = 0;
+            tsSec = currentSec;
+        }
+        submitFrameCounter++;
     }
 
     // Reset the framebuffer and stereo state
