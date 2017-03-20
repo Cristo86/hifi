@@ -37,6 +37,9 @@ using namespace gpu::gl;
 static GLBackend* INSTANCE{ nullptr };
 static const char* GL_BACKEND_PROPERTY_NAME = "com.highfidelity.gl.backend";
 
+bool GLBackend::cameraMonoTransferredx = false;
+bool GLBackend::cameraStereoTransferredx = false;
+
 BackendPointer GLBackend::createBackend() {
     // FIXME provide a mechanism to override the backend for testing
     // Where the gpuContext is initialized and where the TRUE Backend is created and assigned
@@ -70,48 +73,48 @@ bool GLBackend::makeProgram(Shader& shader, const Shader::BindingSet& slotBindin
 
 GLBackend::CommandCall GLBackend::_commandCalls[Batch::NUM_COMMANDS] = 
 {
-    (&::gpu::gl::GLBackend::do_draw),
+    (&::gpu::gl::GLBackend::do_draw), // 0
     (&::gpu::gl::GLBackend::do_drawIndexed),
     (&::gpu::gl::GLBackend::do_drawInstanced),
     (&::gpu::gl::GLBackend::do_drawIndexedInstanced),
     (&::gpu::gl::GLBackend::do_multiDrawIndirect),
     (&::gpu::gl::GLBackend::do_multiDrawIndexedIndirect),
 
-    (&::gpu::gl::GLBackend::do_setInputFormat),
+    (&::gpu::gl::GLBackend::do_setInputFormat), // 6
     (&::gpu::gl::GLBackend::do_setInputBuffer),
     (&::gpu::gl::GLBackend::do_setIndexBuffer),
     (&::gpu::gl::GLBackend::do_setIndirectBuffer),
 
-    (&::gpu::gl::GLBackend::do_setModelTransform),
+    (&::gpu::gl::GLBackend::do_setModelTransform), // 10
     (&::gpu::gl::GLBackend::do_setViewTransform),
     (&::gpu::gl::GLBackend::do_setProjectionTransform),
     (&::gpu::gl::GLBackend::do_setViewportTransform),
     (&::gpu::gl::GLBackend::do_setDepthRangeTransform),
 
-    (&::gpu::gl::GLBackend::do_setPipeline),
+    (&::gpu::gl::GLBackend::do_setPipeline), // 15
     (&::gpu::gl::GLBackend::do_setStateBlendFactor),
     (&::gpu::gl::GLBackend::do_setStateScissorRect),
 
-    (&::gpu::gl::GLBackend::do_setUniformBuffer),
+    (&::gpu::gl::GLBackend::do_setUniformBuffer), // 18
     (&::gpu::gl::GLBackend::do_setResourceTexture),
 
-    (&::gpu::gl::GLBackend::do_setFramebuffer),
+    (&::gpu::gl::GLBackend::do_setFramebuffer), // 20
     (&::gpu::gl::GLBackend::do_clearFramebuffer),
     (&::gpu::gl::GLBackend::do_blit),
     (&::gpu::gl::GLBackend::do_generateTextureMips),
 
-    (&::gpu::gl::GLBackend::do_beginQuery),
+    (&::gpu::gl::GLBackend::do_beginQuery), // 24
     (&::gpu::gl::GLBackend::do_endQuery),
     (&::gpu::gl::GLBackend::do_getQuery),
 
-    (&::gpu::gl::GLBackend::do_resetStages),
+    (&::gpu::gl::GLBackend::do_resetStages), // 27
 
-    (&::gpu::gl::GLBackend::do_runLambda),
+    (&::gpu::gl::GLBackend::do_runLambda), // 29
 
     (&::gpu::gl::GLBackend::do_startNamedCall),
     (&::gpu::gl::GLBackend::do_stopNamedCall),
 
-    (&::gpu::gl::GLBackend::do_glUniform1i),
+    (&::gpu::gl::GLBackend::do_glUniform1i), // 31
     (&::gpu::gl::GLBackend::do_glUniform1f),
     (&::gpu::gl::GLBackend::do_glUniform2f),
     (&::gpu::gl::GLBackend::do_glUniform3f),
@@ -122,9 +125,9 @@ GLBackend::CommandCall GLBackend::_commandCalls[Batch::NUM_COMMANDS] =
     (&::gpu::gl::GLBackend::do_glUniformMatrix3fv),
     (&::gpu::gl::GLBackend::do_glUniformMatrix4fv),
 
-    (&::gpu::gl::GLBackend::do_glColor4f),
+    (&::gpu::gl::GLBackend::do_glColor4f), // 41
 
-    (&::gpu::gl::GLBackend::do_pushProfileRange),
+    (&::gpu::gl::GLBackend::do_pushProfileRange), // 42
     (&::gpu::gl::GLBackend::do_popProfileRange),
 };
 
@@ -202,12 +205,16 @@ void GLBackend::renderPassTransfer(const Batch& batch) {
                 case Batch::COMMAND_drawIndexedInstanced:
                 case Batch::COMMAND_multiDrawIndirect:
                 case Batch::COMMAND_multiDrawIndexedIndirect:
+                    {
+                    PROFILE_RANGE_EX(render, QString::fromStdString( "preUpdate["+ std::to_string((int)(*command)) +"]" ), 0xffff0000, (uint64_t)_commandIndex)
                     _transform.preUpdate(_commandIndex, _stereo);
+                    }
                     break;
 
                 case Batch::COMMAND_setViewportTransform:
                 case Batch::COMMAND_setViewTransform:
                 case Batch::COMMAND_setProjectionTransform: {
+                    PROFILE_RANGE_EX(render, QString::fromStdString( "commandCall["+ std::to_string((int)(*command)) +"]" ), 0xffff0000, (uint64_t)_commandIndex)
                     CommandCall call = _commandCalls[(*command)];
                     (this->*(call))(batch, *offset);
                     break;
@@ -238,6 +245,7 @@ void GLBackend::renderPassDraw(const Batch& batch) {
     const Batch::CommandOffsets::value_type* offset = batch.getCommandOffsets().data();
     for (_commandIndex = 0; _commandIndex < numCommands; ++_commandIndex) {
         //PROFILE_RANGE_EX(render, "eachCommand", 0xffff0000, (uint64_t)_commandIndex);
+        PROFILE_RANGE_EX(render, QString::fromStdString( "eachCommand["+ std::to_string((int)(*command)) +"]" ), 0xffff0000, (uint64_t)_commandIndex);
         switch (*command) {
             // Ignore these commands on this pass, taken care of in the transfer pass
             // Note we allow COMMAND_setViewportTransform to occur in both passes
@@ -262,13 +270,14 @@ void GLBackend::renderPassDraw(const Batch& batch) {
                 updatePipeline();
                 }
                 {//PROFILE_RANGE_EX(render, "commandCall", 0xff0000ff, (uint64_t)_commandIndex);
+                //PROFILE_RANGE_EX(render, QString::fromStdString( "commandCall["+ std::to_string((int)(*command)) +"]" ),0xff0000ff , (uint64_t)_commandIndex)
                 CommandCall call = _commandCalls[(*command)];
                 (this->*(call))(batch, *offset);
                 }
                 break;
             }
             default: {
-                {//PROFILE_RANGE_EX(render, QString::fromStdString( "commandCallDefault["+ std::to_string((int)(*command)) +"]" ) , 0xff6666ff, (uint64_t)_commandIndex);
+                {//PROFILE_RANGE_EX(render, QString::fromStdString( "commandCallDefault["+ std::to_string((int)(*command)) +"]" ) , 0xff6666ff, (uint64_t)_commandIndex)
                 CommandCall call = _commandCalls[(*command)];
                 (this->*(call))(batch, *offset);
                 break;
@@ -299,7 +308,8 @@ void GLBackend::render(const Batch& batch) {
 
     {
         //PROFILE_RANGE(render_gpu_gl, _stereo._enable ? "Render Stereo" : "Render");
-        PROFILE_RANGE_EX(render, _stereo._enable ? "renderPassDrawST" : "renderPassDrawNoST", 0xff00ff00, 1);
+        //PROFILE_RANGE_EX(render, _stereo._enable ? "renderPassDrawST" : "renderPassDrawNoST", 0xff00ff00, 1);
+        PROFILE_RANGE_EX(render, "renderPassDraw", 0xff00ff00, 1)
         renderPassDraw(batch);
     }
 
@@ -323,7 +333,7 @@ void GLBackend::setupStereoSide(int side) {
     vp.z /= 2;
     glViewport(vp.x + side * vp.z, vp.y, vp.z, vp.w);
 
-    _transform.bindCurrentCamera(side);
+    _transform.bindCurrentCamera(isStereo()?side:-1);
 }
 
 void GLBackend::do_resetStages(const Batch& batch, size_t paramOffset) {
@@ -709,7 +719,8 @@ void GLBackend::recycle() const {
             glDeleteQueries((GLsizei)ids.size(), ids.data());
         }
     }
-
+    setCameraMonoTransferred(false);
+    setCameraStereoTransferred(false);
 #ifndef THREADED_TEXTURE_TRANSFER
     gl::GLTexture::_textureTransferHelper->process();
 #endif

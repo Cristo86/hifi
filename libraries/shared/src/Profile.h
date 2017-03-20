@@ -71,6 +71,8 @@ inline void counter(const QLoggingCategory& category, const QString& name, const
 
 #define PROFILE_RANGE(category, name) Duration profileRangeThis(trace_##category(), name);
 #define PROFILE_RANGE_EX(category, name, argbColor, payload, ...) Duration profileRangeThis(trace_##category(), name, argbColor, (uint64_t)payload, ##__VA_ARGS__);
+//#define PROFILE_RANGE(category, name)
+//#define PROFILE_RANGE_EX(category, name, argbColor, payload, ...)
 #define PROFILE_RANGE_BEGIN(category, rangeId, name, argbColor) rangeId = Duration::beginRange(trace_##category(), name, argbColor)
 #define PROFILE_RANGE_END(category, rangeId) Duration::endRange(trace_##category(), rangeId)
 #define PROFILE_ASYNC_BEGIN(category, name, id, ...) asyncBegin(trace_##category(), name, id, ##__VA_ARGS__);

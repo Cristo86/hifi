@@ -35,6 +35,7 @@ GLuint GLESBackend::getTextureID(const TexturePointer& texture, bool transfer) {
 }
 
 GLTexture* GLESBackend::syncGPUObject(const TexturePointer& texture, bool transfer) {
+    PROFILE_RANGE_EX(render, "syncGPUObjectBT", 0xff00ffff, 1)
     return GLESTexture::sync<GLESTexture>(*this, texture, transfer);
 }
 

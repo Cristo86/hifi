@@ -30,6 +30,7 @@ public:
 };
 
 GLQuery* GLESBackend::syncGPUObject(const Query& query) {
+    PROFILE_RANGE_EX(render, "syncGPUObjectBQ", 0xff00ffff, 1)
     return GLESQuery::sync<GLESQuery>(*this, query);
 }
 

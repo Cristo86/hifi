@@ -45,6 +45,9 @@ Batch::Batch() {
     _objects.reserve(_objectsMax);
     _drawCallInfos.reserve(_drawCallInfosMax);
     _debugBatch = false;
+    static uint cnt = 0;
+    cnt++;
+    //qDebug() << "[CHECK-PERFORMANCE] " << cnt;
 }
 
 Batch::Batch(const Batch& batch_) {

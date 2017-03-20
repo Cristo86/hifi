@@ -57,6 +57,11 @@ public:
                                      const Vec4i& region, QImage& destImage) final override;
 
 
+    static bool cameraMonoTransferredx;
+    static bool cameraStereoTransferredx; 
+    static void setCameraMonoTransferred(bool t) { cameraMonoTransferredx = t; }
+    static void setCameraStereoTransferred(bool t) { cameraStereoTransferredx = t; }
+
     // this is the maximum numeber of available input buffers
     size_t getNumInputBuffers() const { return _input._invalidBuffers.size(); }
 
@@ -180,6 +185,7 @@ public:
 protected:
 
     void recycle() const override;
+
     virtual GLFramebuffer* syncGPUObject(const Framebuffer& framebuffer) = 0;
     virtual GLBuffer* syncGPUObject(const Buffer& buffer) = 0;
     virtual GLTexture* syncGPUObject(const TexturePointer& texture, bool sync = true) = 0;
@@ -289,7 +295,9 @@ protected:
         mutable std::map<std::string, GLvoid*> _drawCallInfoOffsets;
 
         GLuint _objectBuffer { 0 };
-        GLuint _cameraBuffer { 0 };
+        //GLuint _cameraBuffer { 0 };
+        GLuint _cameraMonoBuffer { 0 };
+        GLuint _cameraStereoBuffer { 0 };
         GLuint _drawCallInfoBuffer { 0 };
         GLuint _objectBufferTexture { 0 };
         size_t _cameraUboSize { 0 };

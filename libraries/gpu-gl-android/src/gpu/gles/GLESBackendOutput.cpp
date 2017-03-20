@@ -120,6 +120,7 @@ public:
 };
 
 gl::GLFramebuffer* gpu::gles::GLESBackend::syncGPUObject(const Framebuffer& framebuffer) {
+    PROFILE_RANGE_EX(render, "syncGPUObjectFB", 0xff00ffff, 1)
     return GLESFramebuffer::sync<GLESFramebuffer>(*this, framebuffer);
 }
 

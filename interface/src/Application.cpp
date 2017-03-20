@@ -1285,13 +1285,15 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer, bo
     saveProfilingTimer->setInterval(30 * 1000);
     connect(saveProfilingTimer, &QTimer::timeout, this, [this]() {
         auto tracer = DependencyManager::get<tracing::Tracer>();
-        qDebug() << "[PROFILING] Tracer " << tracer;
         static int cnt=0;
+        if (cnt < 1) {
+        qDebug() << "[PROFILING] Tracer " << tracer;
         cnt++;
         auto outputFile =  QString("/storage/emulated/0/profile_%1.json.gz").arg(cnt);
-        qDebug() << "[  ] serialize profiling";
+        qDebug() << "[PROFILING] serialize profiling";
         tracer->serialize(outputFile);
         qDebug() << "[PROFILING] serialize profiling end " << outputFile;
+        }
     });
     saveProfilingTimer->start();
 #endif
@@ -2478,7 +2480,7 @@ void Application::paintGL() {
         static long tsSec = 0L;
         long currentSec = static_cast<long int> (std::time(nullptr));
         if (tsSec != currentSec) {
-            qDebug() << "[SIMPLE-METRIC] " << tsSec << " displayPlugin->submitFrames " << submitFrameCounter;
+            qDebug() << "[SIMPLE-METRIC] frameRate: " << submitFrameCounter << " fps";
             submitFrameCounter = 0;
             tsSec = currentSec;
         }

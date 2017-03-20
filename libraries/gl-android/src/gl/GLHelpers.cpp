@@ -38,10 +38,14 @@ const QSurfaceFormat& getDefaultOpenGLSurfaceFormat() {
         // Qt Quick may need a depth and stencil buffer. Always make sure these are available.
         format.setDepthBufferSize(DEFAULT_GL_DEPTH_BUFFER_BITS);
         format.setStencilBufferSize(DEFAULT_GL_STENCIL_BUFFER_BITS);
+        format.setSwapInterval(0);
+        format.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
         setGLFormatVersion(format);
         format.setProfile(QSurfaceFormat::OpenGLContextProfile::CoreProfile);
         QSurfaceFormat::setDefaultFormat(format);
     });
+    //qDebug() << "[PERFORMANCE-CHECK] default SwapBehavior " << format.swapBehavior();
+    //qDebug() << "[PERFORMANCE-CHECK] default SwapInterval " << format.swapInterval();
     return format;
 }
 

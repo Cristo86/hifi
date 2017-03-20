@@ -54,7 +54,9 @@ void GLBackend::do_setDepthRangeTransform(const Batch& batch, size_t paramOffset
 
 void GLBackend::killTransform() {
     glDeleteBuffers(1, &_transform._objectBuffer);
-    glDeleteBuffers(1, &_transform._cameraBuffer);
+    //glDeleteBuffers(1, &_transform._cameraBuffer);
+    glDeleteBuffers(1, &_transform._cameraMonoBuffer);
+    glDeleteBuffers(1, &_transform._cameraStereoBuffer);
     glDeleteBuffers(1, &_transform._drawCallInfoBuffer);
     glDeleteTextures(1, &_transform._objectBufferTexture);
 }
@@ -138,7 +140,7 @@ void GLBackend::TransformStageState::update(size_t commandIndex, const StereoSta
         bindCurrentCamera(0);
 #else 
         if (!stereo._enable) {
-            bindCurrentCamera(0);
+            bindCurrentCamera(-1);
         }
 #endif
     }
@@ -148,7 +150,12 @@ void GLBackend::TransformStageState::update(size_t commandIndex, const StereoSta
 void GLBackend::TransformStageState::bindCurrentCamera(int eye) const {
     if (_currentCameraOffset != INVALID_OFFSET) {
         //qDebug() << "GLBackend::TransformStageState::bindCurrentCamera";
-        glBindBufferRange(GL_UNIFORM_BUFFER, TRANSFORM_CAMERA_SLOT, _cameraBuffer, _currentCameraOffset + eye * _cameraUboSize, sizeof(CameraBufferElement));
+        //glBindBufferRange(GL_UNIFORM_BUFFER, TRANSFORM_CAMERA_SLOT, _cameraBuffer,_currentCameraOffset + eye * _cameraUboSize, sizeof(CameraBufferElement));
+        glBindBufferRange(GL_UNIFORM_BUFFER, TRANSFORM_CAMERA_SLOT,
+            
+            (eye<-99?_cameraMonoBuffer:_cameraStereoBuffer),
+            
+            _currentCameraOffset + (eye<0?0:eye) * _cameraUboSize, sizeof(CameraBufferElement));
     }
 }
 

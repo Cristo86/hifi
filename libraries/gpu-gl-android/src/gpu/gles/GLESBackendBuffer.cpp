@@ -21,6 +21,7 @@ namespace gpu {
 
         public:
             GLESBuffer(const std::weak_ptr<gl::GLBackend>& backend, const Buffer& buffer, GLESBuffer* original) : Parent(backend, buffer, allocate()) {
+                PROFILE_RANGE_EX(render, "GLESBuffer", 0xffcc4488, 1)
                 glBindBuffer(GL_ARRAY_BUFFER, _buffer);
                 glBufferData(GL_ARRAY_BUFFER, _size, nullptr, GL_DYNAMIC_DRAW);
                 glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -44,6 +45,7 @@ namespace gpu {
                 Size currentPage { 0 };
                 auto data = _gpuObject._renderSysmem.readData();
                 while (_gpuObject._renderPages.getNextTransferBlock(offset, size, currentPage)) {
+                    PROFILE_RANGE_EX(render, "transfer-glBufferSubData", 0xffcc4488, 1)
                     glBufferSubData(GL_ARRAY_BUFFER, offset, size, data + offset);
                     (void)CHECK_GL_ERROR();
                 }
@@ -65,5 +67,6 @@ GLuint GLESBackend::getBufferID(const Buffer& buffer) {
 }
 
 GLBuffer* GLESBackend::syncGPUObject(const Buffer& buffer) {
+    PROFILE_RANGE_EX(render, "syncGPUObject", 0xff00ffff, 1)
     return GLESBuffer::sync<GLESBuffer>(*this, buffer);
 }

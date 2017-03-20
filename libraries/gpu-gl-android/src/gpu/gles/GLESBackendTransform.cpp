@@ -15,7 +15,9 @@ using namespace gpu::gles;
 
 void GLESBackend::initTransform() {
     glGenBuffers(1, &_transform._objectBuffer);
-    glGenBuffers(1, &_transform._cameraBuffer);
+    //glGenBuffers(1, &_transform._cameraBuffer);
+    glGenBuffers(1, &_transform._cameraMonoBuffer);
+    glGenBuffers(1, &_transform._cameraStereoBuffer);
     glGenBuffers(1, &_transform._drawCallInfoBuffer);
     glGenTextures(1, &_transform._objectBufferTexture);
     size_t cameraSize = sizeof(TransformStageState::CameraBufferElement);
@@ -28,13 +30,25 @@ void GLESBackend::transferTransformState(const Batch& batch) const {
     // FIXME not thread safe
     static std::vector<uint8_t> bufferData;
     if (!_transform._cameras.empty()) {
-        bufferData.resize(_transform._cameraUboSize * _transform._cameras.size());
-        for (size_t i = 0; i < _transform._cameras.size(); ++i) {
-            memcpy(bufferData.data() + (_transform._cameraUboSize * i), &_transform._cameras[i], sizeof(TransformStageState::CameraBufferElement));
-        }
-        glBindBuffer(GL_UNIFORM_BUFFER, _transform._cameraBuffer);
-        glBufferData(GL_UNIFORM_BUFFER, bufferData.size(), bufferData.data(), GL_DYNAMIC_DRAW);
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+        /*if (_transform._cameras.size() == 1 && !cameraMonoTransferredx) {
+            bufferData.resize(_transform._cameraUboSize * _transform._cameras.size());
+            memcpy(bufferData.data(), &_transform._cameras[0], sizeof(TransformStageState::CameraBufferElement));
+            glBindBuffer(GL_UNIFORM_BUFFER, _transform._cameraMonoBuffer);
+            qDebug() << "[CHECK-PERFORMANCE] glBufferData (mono) GL_UNIFORM_BUFFER "<< _transform._cameraMonoBuffer<< " (" << bufferData.size() << ")";
+            glBufferData(GL_UNIFORM_BUFFER, bufferData.size(), bufferData.data(), GL_DYNAMIC_DRAW);
+            glBindBuffer(GL_UNIFORM_BUFFER, 0);
+            setCameraMonoTransferred(true);
+        } else if (_transform._cameras.size() == 2 && !cameraStereoTransferredx) {*/
+            bufferData.resize(_transform._cameraUboSize * _transform._cameras.size());
+            for (size_t i = 0; i < _transform._cameras.size(); ++i) {
+                memcpy(bufferData.data() + (_transform._cameraUboSize * i), &_transform._cameras[i], sizeof(TransformStageState::CameraBufferElement));
+            }
+            glBindBuffer(GL_UNIFORM_BUFFER, _transform._cameraStereoBuffer);
+            qDebug() << "[CHECK-PERFORMANCE] glBufferData (stereo) GL_UNIFORM_BUFFER "<< _transform._cameraStereoBuffer<< " (" << bufferData.size() << ")";
+            glBufferData(GL_UNIFORM_BUFFER, bufferData.size(), bufferData.data(), GL_DYNAMIC_DRAW);
+            glBindBuffer(GL_UNIFORM_BUFFER, 0);
+            setCameraStereoTransferred(true);
+        //}
     }
 
     if (!batch._objects.empty()) {
@@ -59,7 +73,7 @@ void GLESBackend::transferTransformState(const Batch& batch) const {
             _transform._drawCallInfoOffsets[data.first] = (GLvoid*)currentSize;
         }
 
-        qDebug() << "GLESBackend::transferTransformState with size " << bufferData.size();
+        //qDebug() << "GLESBackend::transferTransformState with size " << bufferData.size();
         glBindBuffer(GL_ARRAY_BUFFER, _transform._drawCallInfoBuffer);
         glBufferData(GL_ARRAY_BUFFER, bufferData.size(), bufferData.data(), GL_DYNAMIC_DRAW);
         glBindBuffer(GL_ARRAY_BUFFER, 0);

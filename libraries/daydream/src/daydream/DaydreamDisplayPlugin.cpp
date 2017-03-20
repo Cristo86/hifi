@@ -70,17 +70,17 @@ void DaydreamDisplayPlugin::internalPresent() {
     {
     PROFILE_RANGE_EX(render, "gvrFrameSubmit", 0xff33ff22, (uint64_t)presentCount())
     frame.Submit(gvrState->_viewport_list, head_view);
+    }
         static int submitFrameCounter = 0;
         static long tsSec = 0L;
         long currentSec = static_cast<long int> (std::time(nullptr));
         if (tsSec != currentSec) {
-            qDebug() << "[SIMPLE-METRIC] " << tsSec << " gvr->submitFrames " << submitFrameCounter;
+            qDebug() << "[SIMPLE-METRIC] renderRate: " << submitFrameCounter << " fps";
             submitFrameCounter = 0;
             tsSec = currentSec;
         }
         submitFrameCounter++;
 
-    }
     swapBuffers();
 }
 

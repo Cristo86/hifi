@@ -603,6 +603,7 @@ void OpenGLDisplayPlugin::internalPresent() {
 }
 
 void OpenGLDisplayPlugin::present() {
+    qDebug() << "[CHECK-PERFORMANCE] begin frame"; 
     PROFILE_RANGE_EX(render, __FUNCTION__, 0xffffff00, (uint64_t)presentCount())
     {
     PROFILE_RANGE_EX(render, "updateFrameData", 0xff55ff11, (uint64_t)presentCount())
@@ -762,7 +763,9 @@ gpu::gl::GLBackend* OpenGLDisplayPlugin::getGLBackend() {
 
 void OpenGLDisplayPlugin::render(std::function<void(gpu::Batch& batch)> f) {
     gpu::Batch batch;
+    {PROFILE_RANGE_EX(render, "f(batch)", 0xffcc4488, 1)
     f(batch);
+    }
     {
     PROFILE_RANGE_EX(render, "renderExecuteBatch", 0xff4488cc, 1)
     _gpuContext->executeBatch(batch);
@@ -774,6 +777,7 @@ OpenGLDisplayPlugin::~OpenGLDisplayPlugin() {
 }
 
 void OpenGLDisplayPlugin::updateCompositeFramebuffer() {
+    PROFILE_RANGE_EX(render, "updateCompositeFramebuffer", 0xff7722bb, 1)
     auto renderSize = getRecommendedRenderSize();
     if (!_compositeFramebuffer || _compositeFramebuffer->getSize() != renderSize) {
         _compositeFramebuffer = gpu::FramebufferPointer(gpu::Framebuffer::create("OpenGLDisplayPlugin::composite", gpu::Element::COLOR_RGBA_32, renderSize.x, renderSize.y));
