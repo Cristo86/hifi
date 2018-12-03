@@ -85,6 +85,8 @@ private:
 
         FilteredStick _filteredRightStick;
 
+        bool _rtClickStarted { false };
+
         DaydreamControllerManager& _parent;
         friend class DaydreamControllerManager;
     };
