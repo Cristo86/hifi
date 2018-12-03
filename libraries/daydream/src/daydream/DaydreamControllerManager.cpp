@@ -184,6 +184,8 @@ void DaydreamControllerManager::DaydreamControllerDevice::handleController(GvrSt
         gvr_vec2f touchPos = gvrState->_controller_state.GetTouchPos();
         handleAxisEvent(deltaTime, isTouching, touchPos);
         partitionTouchpad(controller::RS, controller::RX, controller::RY, controller::RT_CLICK, controller::RS_X, controller::RS_Y);
+    } else {
+        _rtClickStarted = false;
     }
 
 }
@@ -322,11 +324,17 @@ void DaydreamControllerManager::DaydreamControllerDevice::partitionTouchpad(int 
         bool isCenter = radius < CENTER_DEADBAND;
         int toInsert = isCenter ? centerPseudoButton : ((angle < DIAGONAL_DIVIDE_IN_RADIANS) ? xPseudoButton :yPseudoButton);
         //_buttonPressedMap.insert(isCenter ? centerPseudoButton : ((angle < DIAGONAL_DIVIDE_IN_RADIANS) ? xPseudoButton :yPseudoButton));
-        _buttonPressedMap.insert(toInsert);
-        if (isCenter) {
+        if (!isCenter) {
+            _buttonPressedMap.insert(toInsert);
+        }
+        if (isCenter || _rtClickStarted) {
+            // RT_CLICK
+            _buttonPressedMap.insert(toInsert);
             // extra RT
             _buttonPressedMap.insert(controller::RT);
             _axisStateMap[controller::RT] = 1;
+            // save so we keep sending the click message
+            _rtClickStarted = true;
         }
     }
 }
