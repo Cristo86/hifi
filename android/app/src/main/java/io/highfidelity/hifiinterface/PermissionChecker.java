@@ -3,9 +3,12 @@ package io.highfidelity.hifiinterface;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 
@@ -22,6 +25,8 @@ public class PermissionChecker extends Activity {
 
 
     private static final String TAG = "Interface";
+    private static final String PREFERENCE_ASKED_PERMISSIONS = "asked_permissions";
+
     private boolean mIsDaydreamStarted;
     private final String[] permissions = { Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE,
                                            Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA };
@@ -45,15 +50,20 @@ public class PermissionChecker extends Activity {
 
             if (arePermissionsGranted(permissions)) {
                 launchActivityWithPermissions();
-            } else if (mIsDaydreamStarted) {
-                DaydreamApi daydreamApi;
-                daydreamApi = DaydreamApi.create(this);
-                PermissionChecker permissionCheckerActivity = new PermissionChecker();
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                daydreamApi.exitFromVr(this, PermissionChecker.REQUEST_EXIT_VR, null);
-                daydreamApi.close();
+            } else if (!hasAskedPermissionsAnytime() || shouldShowRequestPermissionRationale(permissions)) {
+                if (mIsDaydreamStarted) {
+                    DaydreamApi daydreamApi;
+                    daydreamApi = DaydreamApi.create(this);
+                    PermissionChecker permissionCheckerActivity = new PermissionChecker();
+                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                    daydreamApi.exitFromVr(this, PermissionChecker.REQUEST_EXIT_VR, null);
+                    daydreamApi.close();
+                } else {
+                    requestPermissions(permissions, REQUEST_PERMISSIONS);
+                }
             } else {
-                requestPermissions(permissions, REQUEST_PERMISSIONS);
+                // permissions are not granted but the user checked "Don't ask again"
+                launchActivityWithPermissions();
             }
         }
     }
@@ -69,15 +79,31 @@ public class PermissionChecker extends Activity {
         mIsDaydreamStarted = savedInstanceState.getBoolean(Constants.DAYDREAM_CATEGORY, false);
     }
 
+    private boolean hasAskedPermissionsAnytime() {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        return preferences.getBoolean(PREFERENCE_ASKED_PERMISSIONS, false);
+    }
+
+    private void setAskedPermission() {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        preferences.edit().putBoolean(PREFERENCE_ASKED_PERMISSIONS, true).commit();
+    }
+
     private boolean arePermissionsGranted(final String[] requestedPermissions) {
         int permissionCheck = PackageManager.PERMISSION_GRANTED;
-        boolean shouldShowRequestPermissionRationale = false;
         for (String permission : requestedPermissions) {
             permissionCheck = permissionCheck + checkSelfPermission(permission);
-            shouldShowRequestPermissionRationale = shouldShowRequestPermissionRationale || shouldShowRequestPermissionRationale(permission);
         }
 
-        return permissionCheck == PackageManager.PERMISSION_GRANTED || !shouldShowRequestPermissionRationale;
+        return permissionCheck == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private boolean shouldShowRequestPermissionRationale(final String[] requestedPermissions) {
+        boolean shouldShowRequestPermissionRationale = false;
+        for (String permission : requestedPermissions) {
+            shouldShowRequestPermissionRationale = shouldShowRequestPermissionRationale || shouldShowRequestPermissionRationale(permission);
+        }
+        return shouldShowRequestPermissionRationale;
     }
 
     private void launchActivityWithPermissions() {
@@ -92,6 +118,7 @@ public class PermissionChecker extends Activity {
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        setAskedPermission();
         int permissionCheck = PackageManager.PERMISSION_GRANTED;
         for (int permission : grantResults) {
             permissionCheck = permissionCheck + permission;
