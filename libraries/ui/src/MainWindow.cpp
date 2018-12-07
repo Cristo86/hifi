@@ -26,6 +26,22 @@
 #include <QDebug>
 
 #include "ui/Logging.h"
+#if defined(Q_OS_ANDROID)
+#include <jni.h>
+
+int _screenGeometryWidth = -1;
+int _screenGeometryHeight = -1;
+
+extern "C" {
+
+
+JNIEXPORT void Java_io_highfidelity_hifiinterface_InterfaceActivity_saveRealScreenSize(JNIEnv* env, jobject obj, int width, int height) {
+    _screenGeometryWidth = width;
+    _screenGeometryHeight = height;
+}
+
+}
+#endif
 
 MainWindow::MainWindow(QWidget* parent) :
     QMainWindow(parent),
@@ -56,6 +72,12 @@ void MainWindow::restoreGeometry() {
     // Did not use setGeometry() on purpose,
     // see http://doc.qt.io/qt-5/qsettings.html#restoring-the-state-of-a-gui-application
     QRect geometry = _windowGeometry.get(qApp->desktop()->availableGeometry());
+#if defined(Q_OS_ANDROID)
+    if (_screenGeometryWidth > -1 && _screenGeometryHeight > -1) {
+        geometry.setWidth(_screenGeometryWidth);
+        geometry.setHeight(_screenGeometryHeight);
+    }
+#endif
     move(geometry.topLeft());
     resize(geometry.size());
 

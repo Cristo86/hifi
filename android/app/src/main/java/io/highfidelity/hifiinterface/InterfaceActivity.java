@@ -62,6 +62,8 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
     private static final int NORMAL_DPI = 160;
     private static final int MARGIN_GVR_BUTTONS_DP = 10;
 
+    private native void saveRealScreenSize(int width, int height);
+
     private Vibrator mVibrator;
     private HeadsetStateReceiver headsetStateReceiver;
 
@@ -129,10 +131,12 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
 
         assetManager = getResources().getAssets();
 
-        nativeOnCreateGvrSetup(this, gvrApi.getNativeGvrContext());
-        nativeOnCreate(this, assetManager);
         Point size = new Point();
         getWindowManager().getDefaultDisplay().getRealSize(size);
+        saveRealScreenSize(size.x, size.y);
+        
+        nativeOnCreateGvrSetup(this, gvrApi.getNativeGvrContext());
+        nativeOnCreate(this, assetManager);
 
         final FrameLayout rootView = getWindow().getDecorView().findViewById(android.R.id.content);
 

@@ -16,6 +16,11 @@
 
 #include <SettingHandle.h>
 
+#if defined(Q_OS_ANDROID)
+    extern int _screenGeometryWidth;
+    extern int _screenGeometryHeight;
+#endif
+
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
