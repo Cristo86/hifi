@@ -18,6 +18,7 @@ import android.content.pm.ActivityInfo;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.Build;
@@ -61,6 +62,8 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
     private static final int WEB_DRAWER_BOTTOM_MARGIN = 150;
     private static final int NORMAL_DPI = 160;
     private static final int MARGIN_GVR_BUTTONS_DP = 10;
+    private static final int GVR_SPLIT_WIDTH = 2;
+    private static final int GVR_SPLIT_HEIGHT = 55;
 
     private native void saveRealScreenSize(int width, int height);
 
@@ -90,6 +93,7 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
     private DisplaySynchronizer displaySynchronizer;
     private ImageView vrCloseButton;
     private ImageView vrSettingsButton;
+    private View vrVerticalSplitLine;
 
     // Opaque native pointer to the Application C++ object.
     // This object is owned by the InterfaceActivity instance and passed to the native methods.
@@ -177,6 +181,15 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
         vrSettingsButton.setOnClickListener(view -> onGvrSettingsButtonClick());
         vrSettingsButton.setVisibility(View.GONE);
         mainLayout.addView(vrSettingsButton);
+
+        vrVerticalSplitLine = new View(this);
+        vrVerticalSplitLine.setBackgroundColor(Color.parseColor("#FF515151"));
+        lp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
+        lp.width = (int) (density * GVR_SPLIT_WIDTH);
+        lp.height = (int) (density * GVR_SPLIT_HEIGHT);
+        vrVerticalSplitLine.setLayoutParams(lp);
+        mainLayout.addView(vrVerticalSplitLine);
     }
     private void onGvrCloseButtonClick() {
         assert inVrMode;
