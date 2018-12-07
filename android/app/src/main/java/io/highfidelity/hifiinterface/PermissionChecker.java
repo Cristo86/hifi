@@ -2,13 +2,13 @@ package io.highfidelity.hifiinterface;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 
@@ -26,8 +26,10 @@ public class PermissionChecker extends Activity {
 
     private static final String TAG = "Interface";
     private static final String PREFERENCE_ASKED_PERMISSIONS = "asked_permissions";
+    private static final String EXTRA_BYPASS_PERMISSION_CHECK = "bypass_check";
 
     private boolean mIsDaydreamStarted;
+    private DaydreamApi mDaydreamApi;
     private final String[] permissions = { Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE,
                                            Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA };
 
@@ -35,9 +37,20 @@ public class PermissionChecker extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        if (savedInstanceState == null) {
+        if (getIntent().getBooleanExtra(EXTRA_BYPASS_PERMISSION_CHECK, false)) {
             mIsDaydreamStarted = getIntent().getCategories() != null && getIntent().getCategories().contains(Constants.DAYDREAM_CATEGORY);
+            launchActivityWithPermissions();
+            return;
+        }
+        if (mDaydreamApi == null) {
+            mDaydreamApi = DaydreamApi.create(this);
+        }
 
+        if (savedInstanceState == null) {
+
+            onRequestPermissionsResult(REQUEST_PERMISSIONS_VR, new String[0], new int[0] );
+
+            mIsDaydreamStarted = getIntent().getCategories() != null && getIntent().getCategories().contains(Constants.DAYDREAM_CATEGORY);
             Intent myIntent = new Intent(this, BreakpadUploaderService.class);
             startService(myIntent);
 
@@ -52,12 +65,8 @@ public class PermissionChecker extends Activity {
                 launchActivityWithPermissions();
             } else if (!hasAskedPermissionsAnytime() || shouldShowRequestPermissionRationale(permissions)) {
                 if (mIsDaydreamStarted) {
-                    DaydreamApi daydreamApi;
-                    daydreamApi = DaydreamApi.create(this);
-                    PermissionChecker permissionCheckerActivity = new PermissionChecker();
                     setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                    daydreamApi.exitFromVr(this, PermissionChecker.REQUEST_EXIT_VR, null);
-                    daydreamApi.close();
+                    mDaydreamApi.exitFromVr(this, PermissionChecker.REQUEST_EXIT_VR, null);
                 } else {
                     requestPermissions(permissions, REQUEST_PERMISSIONS);
                 }
@@ -66,6 +75,25 @@ public class PermissionChecker extends Activity {
                 launchActivityWithPermissions();
             }
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mDaydreamApi != null) {
+            mDaydreamApi.close();
+            mDaydreamApi = null;
+        }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
     }
 
     public void onSaveInstanceState(Bundle savedInstanceState) {
@@ -109,7 +137,7 @@ public class PermissionChecker extends Activity {
     private void launchActivityWithPermissions() {
         Intent i = new Intent(this, InterfaceActivity.class);
         if (mIsDaydreamStarted) {
-                i.addCategory(Constants.DAYDREAM_CATEGORY);
+            i.addCategory(Constants.DAYDREAM_CATEGORY);
         }
         startActivity(i);
         finish();
@@ -141,7 +169,10 @@ public class PermissionChecker extends Activity {
 
     public void onBackToVrClicked(View view) {
         view.setVisibility(View.INVISIBLE);
-        launchActivityWithPermissions();
+        Intent i = mDaydreamApi.createVrIntent(new ComponentName(this, PermissionChecker.class));
+        i.addCategory(Constants.DAYDREAM_CATEGORY);
+        i.putExtra(EXTRA_BYPASS_PERMISSION_CHECK, true);
+        mDaydreamApi.launchInVr(i);
     }
 
     @Override

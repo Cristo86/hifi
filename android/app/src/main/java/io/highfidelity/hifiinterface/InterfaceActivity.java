@@ -189,6 +189,7 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
         lp.width = (int) (density * GVR_SPLIT_WIDTH);
         lp.height = (int) (density * GVR_SPLIT_HEIGHT);
         vrVerticalSplitLine.setLayoutParams(lp);
+        vrVerticalSplitLine.setVisibility(View.GONE);
         mainLayout.addView(vrVerticalSplitLine);
     }
     private void onGvrCloseButtonClick() {
@@ -256,7 +257,7 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
 
     private void surfacesWorkaround() {
         FrameLayout fl = findViewById(android.R.id.content);
-        if (fl.getChildCount() > 0) {
+        if (fl.getChildCount() > 0 && fl.getChildAt(0) instanceof QtLayout) {
             QtLayout qtLayout = (QtLayout) fl.getChildAt(0);
             List<QtSurface> surfaces = new ArrayList<>();
             for (int i = 0; i < qtLayout.getChildCount(); i++) {
@@ -292,6 +293,8 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
                     Log.e(TAG, "Workaround failed");
                 }
             }
+        } else {
+            Log.w(TAG, "Could not apply surfaces workaround");
         }
     }
 
@@ -458,9 +461,11 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
         if (visible) {
             vrCloseButton.setVisibility(View.VISIBLE);
             vrSettingsButton.setVisibility(View.VISIBLE);
+            vrVerticalSplitLine.setVisibility(View.VISIBLE);
         } else {
             vrCloseButton.setVisibility(View.GONE);
             vrSettingsButton.setVisibility(View.GONE);
+            vrVerticalSplitLine.setVisibility(View.GONE);
         }
     }
 }
