@@ -26,9 +26,11 @@ public class PermissionChecker extends Activity {
 
     private static final String TAG = "Interface";
     private static final String PREFERENCE_ASKED_PERMISSIONS = "asked_permissions";
-    private static final String EXTRA_BYPASS_PERMISSION_CHECK = "bypass_check";
+    public static final String EXTRA_BYPASS_PERMISSION_CHECK = "bypass_check";
+    public static final String EXTRA_SINGLE_INTERFACE_ACTIVITY = "single_interface_activity";
 
     private boolean mIsDaydreamStarted;
+    private boolean mSingleInterfaceActivity;
     private DaydreamApi mDaydreamApi;
     private final String[] permissions = { Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE,
                                            Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA };
@@ -37,6 +39,8 @@ public class PermissionChecker extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        mSingleInterfaceActivity = getIntent().getBooleanExtra(EXTRA_SINGLE_INTERFACE_ACTIVITY, false);
+        mIsDaydreamStarted = getIntent().getCategories() != null && getIntent().getCategories().contains(Constants.DAYDREAM_CATEGORY);
         if (getIntent().getBooleanExtra(EXTRA_BYPASS_PERMISSION_CHECK, false)) {
             mIsDaydreamStarted = getIntent().getCategories() != null && getIntent().getCategories().contains(Constants.DAYDREAM_CATEGORY);
             launchActivityWithPermissions();
@@ -48,9 +52,6 @@ public class PermissionChecker extends Activity {
 
         if (savedInstanceState == null) {
 
-            onRequestPermissionsResult(REQUEST_PERMISSIONS_VR, new String[0], new int[0] );
-
-            mIsDaydreamStarted = getIntent().getCategories() != null && getIntent().getCategories().contains(Constants.DAYDREAM_CATEGORY);
             Intent myIntent = new Intent(this, BreakpadUploaderService.class);
             startService(myIntent);
 
@@ -99,12 +100,14 @@ public class PermissionChecker extends Activity {
     public void onSaveInstanceState(Bundle savedInstanceState) {
         super.onSaveInstanceState(savedInstanceState);
         savedInstanceState.putBoolean(Constants.DAYDREAM_CATEGORY, mIsDaydreamStarted);
+        savedInstanceState.putBoolean(EXTRA_SINGLE_INTERFACE_ACTIVITY, mSingleInterfaceActivity);
     }
 
     @Override
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
         mIsDaydreamStarted = savedInstanceState.getBoolean(Constants.DAYDREAM_CATEGORY, false);
+        mSingleInterfaceActivity = savedInstanceState.getBoolean(EXTRA_SINGLE_INTERFACE_ACTIVITY, false);
     }
 
     private boolean hasAskedPermissionsAnytime() {
@@ -139,8 +142,12 @@ public class PermissionChecker extends Activity {
         if (mIsDaydreamStarted) {
             i.addCategory(Constants.DAYDREAM_CATEGORY);
         }
-        startActivity(i);
+
+        if (mSingleInterfaceActivity) {
+            i.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        }
         finish();
+        startActivity(i);
     }
 
     @Override

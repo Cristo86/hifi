@@ -218,7 +218,12 @@ function modeButtonPressed() {
 }
 
 function modeButtonClicked() {
-    switchToMode(nextMode[currentMode]);
+    if (MODE_VR == nextMode[currentMode]) {
+        // launch animation to switch to Daydream
+        Window.openAndroidActivity("VR", false);
+    } else {
+        switchToMode(nextMode[currentMode]);
+    }
 }
 
 function saveCurrentModeSetting(mode) {
