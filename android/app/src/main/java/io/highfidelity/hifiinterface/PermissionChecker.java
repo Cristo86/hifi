@@ -184,14 +184,16 @@ public class PermissionChecker extends Activity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (resultCode == RESULT_OK) {
-            switch (requestCode) {
-                case REQUEST_EXIT_VR:
+        switch (requestCode) {
+            case REQUEST_EXIT_VR:
+                if (resultCode == RESULT_OK) {
                     requestPermissions(permissions, REQUEST_PERMISSIONS_VR);
-                    break;
-                default:
-                    break;
-            }
+                } else if (resultCode == RESULT_CANCELED) {
+                    finish();
+                }
+                break;
+            default:
+                break;
         }
     }
 
