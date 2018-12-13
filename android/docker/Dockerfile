@@ -69,7 +69,7 @@ RUN mkdir "$HIFI_BASE" && \
     mkdir "$HIFI_VCPKG_BASE" && \ 
     mkdir "$HIFI_ANDROID_PRECOMPILED"
 
-RUN git clone https://github.com/highfidelity/hifi.git && \
+RUN git clone https://github.com/cristo86/hifi.git && \
     cd ~/hifi && \
     git checkout android_daydream 
 
