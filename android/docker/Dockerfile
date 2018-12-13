@@ -69,15 +69,15 @@ RUN mkdir "$HIFI_BASE" && \
     mkdir "$HIFI_VCPKG_BASE" && \ 
     mkdir "$HIFI_ANDROID_PRECOMPILED"
 
-RUN git clone https://github.com/jherico/hifi.git && \
+RUN git clone https://github.com/highfidelity/hifi.git && \
     cd ~/hifi && \
-    git checkout feature/build/gradle-wrapper 
+    git checkout android_daydream 
 
 
 WORKDIR /home/jenkins/hifi
 
 RUN touch .test4 && \ 
-    git fetch && git reset origin/feature/build/gradle-wrapper --hard
+    git fetch && git reset origin/android_daydream --hard
 
 RUN mkdir build
 
