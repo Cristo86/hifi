@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
@@ -27,6 +28,8 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.google.vr.ndk.base.DaydreamApi;
+import com.google.vr.sdk.base.Constants;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
 
@@ -34,7 +37,6 @@ import io.highfidelity.hifiinterface.fragment.FriendsFragment;
 import io.highfidelity.hifiinterface.fragment.HomeFragment;
 import io.highfidelity.hifiinterface.fragment.PolicyFragment;
 import io.highfidelity.hifiinterface.fragment.SettingsFragment;
-import io.highfidelity.hifiinterface.fragment.SignupFragment;
 import io.highfidelity.hifiinterface.task.DownloadProfileImageTask;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener,
@@ -57,6 +59,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public native void logout();
     public native void setUsernameChangedListener(Activity usernameChangedListener);
     public native String getUsername();
+    public native boolean isHMD();
 
     private DrawerLayout mDrawerLayout;
     private NavigationView mNavigationView;
@@ -69,6 +72,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     private boolean backToScene;
     private String backToUrl;
+    private DaydreamApi mDaydreamApi;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -114,6 +118,20 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
             backToScene = getIntent().getBooleanExtra(EXTRA_BACK_TO_SCENE, false);
             backToUrl = getIntent().getStringExtra(EXTRA_BACK_TO_URL);
+        }
+
+        if (mDaydreamApi == null) {
+            mDaydreamApi = DaydreamApi.create(this);
+        }
+
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mDaydreamApi != null) {
+            mDaydreamApi.close();
+            mDaydreamApi = null;
         }
     }
 
@@ -323,12 +341,22 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private void goToDomain(String domainUrl) {
-        Intent intent = new Intent(this, InterfaceActivity.class);
-        intent.putExtra(InterfaceActivity.DOMAIN_URL, domainUrl);
-        finish();
-        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        startActivity(intent);
+        if (isHMD()) {
+            Intent i = mDaydreamApi.createVrIntent(new ComponentName(this, PermissionChecker.class));
+            i.addCategory(Constants.DAYDREAM_CATEGORY);
+            i.putExtra(PermissionChecker.EXTRA_BYPASS_PERMISSION_CHECK, true);
+            i.putExtra(PermissionChecker.EXTRA_SINGLE_INTERFACE_ACTIVITY, true);
+            finish();
+            mDaydreamApi.launchInVr(i);
+        } else {
+            Intent intent = new Intent(this, InterfaceActivity.class);
+            intent.putExtra(InterfaceActivity.DOMAIN_URL, domainUrl);
+            finish();
+            intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
+        }
     }
+
 
     private void goToUser(String username) {
         Intent intent = new Intent(this, InterfaceActivity.class);

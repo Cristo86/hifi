@@ -18,6 +18,7 @@
 
 #include <shared/Storage.h>
 #include <scripting/MenuScriptingInterface.h>
+#include <scripting/HMDScriptingInterface.h>
 #include <AddressManager.h>
 #include "AndroidHelper.h"
 #include <udt/PacketHeaders.h>
@@ -501,6 +502,13 @@ JNIEXPORT void JNICALL
 Java_io_highfidelity_hifiinterface_MainActivity_logout(JNIEnv *env, jobject instance) {
     DependencyManager::get<AccountManager>()->logout();
 }
+
+JNIEXPORT jboolean JNICALL
+Java_io_highfidelity_hifiinterface_MainActivity_isHMD(JNIEnv *env, jobject instance) {
+    return DependencyManager::get<HMDScriptingInterface>()->isHMDMode();
+}
+
+
 
 JNIEXPORT jstring JNICALL
 Java_io_highfidelity_hifiinterface_MainActivity_getUsername(JNIEnv *env,

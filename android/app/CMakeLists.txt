@@ -1,6 +1,6 @@
 set(TARGET_NAME native-lib)
 setup_hifi_library()
-link_hifi_libraries(shared task networking gl gpu qml image fbx hfm render-utils physics entities octree ${PLATFORM_GL_BACKEND} daydream)
+link_hifi_libraries(shared task networking gl gpu qml image fbx hfm render-utils physics entities octree ${PLATFORM_GL_BACKEND} daydream display-plugins)
 target_opengl()
 target_bullet()
 
