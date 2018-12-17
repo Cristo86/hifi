@@ -99,8 +99,9 @@ Buffer::Update::Update(const Buffer& parent) : buffer(parent) {
 void Buffer::Update::apply() const {
     // Make sure we're loaded in order
     buffer._applyUpdateCount++;
+#if !defined(Q_OS_ANDROID)
     assert(buffer._applyUpdateCount == updateNumber);
-
+#endif
     const auto pageSize = buffer._pages._pageSize;
     buffer._renderSysmem.resize(size);
     buffer._renderPages.accommodate(size);
