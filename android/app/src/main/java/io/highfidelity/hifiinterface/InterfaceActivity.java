@@ -112,6 +112,7 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
         AndroidCompat.setVrModeEnabled(this, true);
         runOnUiThread( () -> {
             setGvrButtonsVisibility(true);
+            hideWebDrawer();
         } );
     }
 
