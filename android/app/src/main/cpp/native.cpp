@@ -18,6 +18,7 @@
 
 #include <shared/Storage.h>
 #include <scripting/MenuScriptingInterface.h>
+#include <scripting/HMDScriptingInterface.h>
 #include <AddressManager.h>
 #include "AndroidHelper.h"
 #include <udt/PacketHeaders.h>
@@ -420,11 +421,12 @@ Java_io_highfidelity_hifiinterface_fragment_SignupFragment_login(JNIEnv *env,
     Java_io_highfidelity_hifiinterface_fragment_LoginFragment_login(env, instance, username_, password_, keepLoggedIn);
 }
 
-JNIEXPORT void Java_io_highfidelity_hifiinterface_InterfaceActivity_nativeInitAfterAppLoaded(JNIEnv* env, jobject obj, jboolean daydreamStart) {
+JNIEXPORT void Java_io_highfidelity_hifiinterface_InterfaceActivity_nativeInitAfterAppLoaded(JNIEnv* env, jobject obj) {
     AndroidHelper::instance().moveToThread(qApp->thread());
-    if (daydreamStart) {
-        MenuScriptingInterface::getInstance()->setIsOptionChecked("Daydream", true);
-    }
+}
+
+JNIEXPORT void Java_io_highfidelity_hifiinterface_InterfaceActivity_nativeInitDaydream(JNIEnv* env, jobject obj) {
+    MenuScriptingInterface::getInstance()->setIsOptionChecked("Daydream", true);
 }
 
 JNIEXPORT void JNICALL
@@ -500,6 +502,13 @@ JNIEXPORT void JNICALL
 Java_io_highfidelity_hifiinterface_MainActivity_logout(JNIEnv *env, jobject instance) {
     DependencyManager::get<AccountManager>()->logout();
 }
+
+JNIEXPORT jboolean JNICALL
+Java_io_highfidelity_hifiinterface_MainActivity_isHMD(JNIEnv *env, jobject instance) {
+    return DependencyManager::get<HMDScriptingInterface>()->isHMDMode();
+}
+
+
 
 JNIEXPORT jstring JNICALL
 Java_io_highfidelity_hifiinterface_MainActivity_getUsername(JNIEnv *env,

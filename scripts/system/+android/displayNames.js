@@ -105,7 +105,7 @@ function touchBegin(event) {
 }
 
 function touchEnd(event) {
-    if (Vec3.distance({x: event.x, y: event.y }, {x: currentTouchToAnalyze.x, y: currentTouchToAnalyze.y}) > MAX_DISTANCE_PX) {
+    if (currentTouchToAnalyze && Vec3.distance({x: event.x, y: event.y }, {x: currentTouchToAnalyze.x, y: currentTouchToAnalyze.y}) > MAX_DISTANCE_PX) {
         printd("[AVATARNAME] touchEnd moved too much");
         currentTouchToAnalyze = null;
         return;

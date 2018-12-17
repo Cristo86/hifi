@@ -30,7 +30,6 @@ exports.handlers = {
             '../../interface/src/avatar',
             '../../interface/src/commerce',
             '../../interface/src/devices',
-            '../../interface/src/java',
             '../../interface/src/networking',
             '../../interface/src/raypick',
             '../../interface/src/scripting',

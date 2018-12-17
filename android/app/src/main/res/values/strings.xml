@@ -35,6 +35,7 @@
     <string name="cancel">Cancel</string>
     <string name="cancel_uppercase">CANCEL</string>
     <string name="get_started">GET STARTED</string>
+    <string name="back_to_vr">Return to VR</string>
 
     <!-- tags -->
     <string name="tagFragmentHome">tagFragmentHome</string>

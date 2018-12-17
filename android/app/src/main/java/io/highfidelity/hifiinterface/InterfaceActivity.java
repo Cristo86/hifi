@@ -11,6 +11,7 @@
 
 package io.highfidelity.hifiinterface;
 
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -18,6 +19,7 @@ import android.content.pm.ActivityInfo;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.Build;
@@ -36,6 +38,7 @@ import android.widget.SlidingDrawer;
 import com.google.vr.cardboard.DisplaySynchronizer;
 import com.google.vr.cardboard.DisplayUtils;
 import com.google.vr.ndk.base.AndroidCompat;
+import com.google.vr.ndk.base.DaydreamApi;
 import com.google.vr.ndk.base.GvrApi;
 import com.google.vr.sdk.base.Constants;
 
@@ -57,13 +60,20 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
     public static final String DOMAIN_URL = "url";
     public static final String EXTRA_GOTO_USERNAME = "gotousername";
     private static final String TAG = "Interface";
+    public static final String OPEN_VR = "VR";
+
     private static final int WEB_DRAWER_RIGHT_MARGIN = 262;
     private static final int WEB_DRAWER_BOTTOM_MARGIN = 150;
     private static final int NORMAL_DPI = 160;
     private static final int MARGIN_GVR_BUTTONS_DP = 10;
+    private static final int GVR_SPLIT_WIDTH = 2;
+    private static final int GVR_SPLIT_HEIGHT = 55;
+
+    private native void saveRealScreenSize(int width, int height);
 
     private Vibrator mVibrator;
     private HeadsetStateReceiver headsetStateReceiver;
+    private DaydreamApi mDaydreamApi;
 
     //public static native void handleHifiURL(String hifiURLString);
     private native long nativeOnCreate(InterfaceActivity instance, AssetManager assetManager);
@@ -75,11 +85,13 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
     private native void nativeEnterBackground();
     private native void nativeEnterForeground();
     private native long nativeOnExitVr();
-    private native void nativeInitAfterAppLoaded(boolean isDaydreamStarted);
+    private native void nativeInitAfterAppLoaded();
+    private native void nativeInitDaydream();
 
     private AssetManager assetManager;
 
     private boolean mIsDaydreamStarted;
+    private boolean mSwitchToDaydreamPending;
     private static boolean inVrMode;
 
     private boolean nativeEnterBackgroundCallEnqueued = false;
@@ -88,6 +100,7 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
     private DisplaySynchronizer displaySynchronizer;
     private ImageView vrCloseButton;
     private ImageView vrSettingsButton;
+    private View vrVerticalSplitLine;
 
     // Opaque native pointer to the Application C++ object.
     // This object is owned by the InterfaceActivity instance and passed to the native methods.
@@ -99,6 +112,7 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
         AndroidCompat.setVrModeEnabled(this, true);
         runOnUiThread( () -> {
             setGvrButtonsVisibility(true);
+            hideWebDrawer();
         } );
     }
 
@@ -106,6 +120,10 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
     public void onCreate(Bundle savedInstanceState) {
         super.isLoading = true;
         mIsDaydreamStarted = getIntent().getCategories() != null && getIntent().getCategories().contains(Constants.DAYDREAM_CATEGORY);
+
+        if (mDaydreamApi == null) {
+            mDaydreamApi = DaydreamApi.create(this);
+        }
 
         Intent intent = getIntent();
         if (intent.hasExtra(DOMAIN_URL) && !intent.getStringExtra(DOMAIN_URL).isEmpty()) {
@@ -129,10 +147,12 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
 
         assetManager = getResources().getAssets();
 
-        nativeOnCreateGvrSetup(this, gvrApi.getNativeGvrContext());
-        nativeOnCreate(this, assetManager);
         Point size = new Point();
         getWindowManager().getDefaultDisplay().getRealSize(size);
+        saveRealScreenSize(size.x, size.y);
+        
+        nativeOnCreateGvrSetup(this, gvrApi.getNativeGvrContext());
+        nativeOnCreate(this, assetManager);
 
         final FrameLayout rootView = getWindow().getDecorView().findViewById(android.R.id.content);
 
@@ -173,6 +193,16 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
         vrSettingsButton.setOnClickListener(view -> onGvrSettingsButtonClick());
         vrSettingsButton.setVisibility(View.GONE);
         mainLayout.addView(vrSettingsButton);
+
+        vrVerticalSplitLine = new View(this);
+        vrVerticalSplitLine.setBackgroundColor(Color.parseColor("#FF515151"));
+        lp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
+        lp.width = (int) (density * GVR_SPLIT_WIDTH);
+        lp.height = (int) (density * GVR_SPLIT_HEIGHT);
+        vrVerticalSplitLine.setLayoutParams(lp);
+        vrVerticalSplitLine.setVisibility(View.GONE);
+        mainLayout.addView(vrVerticalSplitLine);
     }
     private void onGvrCloseButtonClick() {
         assert inVrMode;
@@ -201,13 +231,11 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
     protected void onStart() {
         super.onStart();
         nativeEnterBackgroundCallEnqueued = false;
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-
     }
 
     @Override
@@ -219,12 +247,20 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
         registerReceiver(headsetStateReceiver, new IntentFilter(Intent.ACTION_HEADSET_PLUG));
         gvrApi.resumeTracking();
         displaySynchronizer.onResume();
+        if (mSwitchToDaydreamPending) {
+            runOnUiThread(() -> nativeInitDaydream());
+            mSwitchToDaydreamPending = false;
+        }
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         nativeOnDestroy();
+        if (mDaydreamApi != null) {
+            mDaydreamApi.close();
+            mDaydreamApi = null;
+        }
     }
 
     @Override
@@ -239,7 +275,7 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
 
     private void surfacesWorkaround() {
         FrameLayout fl = findViewById(android.R.id.content);
-        if (fl.getChildCount() > 0) {
+        if (fl.getChildCount() > 0 && fl.getChildAt(0) instanceof QtLayout) {
             QtLayout qtLayout = (QtLayout) fl.getChildAt(0);
             List<QtSurface> surfaces = new ArrayList<>();
             for (int i = 0; i < qtLayout.getChildCount(); i++) {
@@ -275,6 +311,8 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
                     Log.e(TAG, "Workaround failed");
                 }
             }
+        } else {
+            Log.w(TAG, "Could not apply surfaces workaround");
         }
     }
 
@@ -312,6 +350,8 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
         } else if (intent.hasExtra(EXTRA_GOTO_USERNAME)) {
             hideWebDrawer();
             nativeGoToUser(intent.getStringExtra(EXTRA_GOTO_USERNAME));
+        } else if (intent.hasCategory(Constants.DAYDREAM_CATEGORY)) {
+            mSwitchToDaydreamPending = true;
         }
     }
 
@@ -373,6 +413,13 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
                 }
                 startActivity(loginIntent);
                 break;
+            case OPEN_VR:
+                Intent i = mDaydreamApi.createVrIntent(new ComponentName(this, PermissionChecker.class));
+                i.addCategory(Constants.DAYDREAM_CATEGORY);
+                i.putExtra(PermissionChecker.EXTRA_BYPASS_PERMISSION_CHECK, true);
+                i.putExtra(PermissionChecker.EXTRA_SINGLE_INTERFACE_ACTIVITY, true);
+                mDaydreamApi.launchInVr(i);
+                break;
             case "WebView":
                 runOnUiThread(() -> {
                     showWebDrawer();
@@ -405,7 +452,10 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
             nativeEnterBackground();
         }
         runOnUiThread(() -> {
-            nativeInitAfterAppLoaded(mIsDaydreamStarted);
+            nativeInitAfterAppLoaded();
+            if (mIsDaydreamStarted) {
+                mSwitchToDaydreamPending = true;
+            }
         });
     }
 
@@ -441,9 +491,11 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
         if (visible) {
             vrCloseButton.setVisibility(View.VISIBLE);
             vrSettingsButton.setVisibility(View.VISIBLE);
+            vrVerticalSplitLine.setVisibility(View.VISIBLE);
         } else {
             vrCloseButton.setVisibility(View.GONE);
             vrSettingsButton.setVisibility(View.GONE);
+            vrVerticalSplitLine.setVisibility(View.GONE);
         }
     }
 }

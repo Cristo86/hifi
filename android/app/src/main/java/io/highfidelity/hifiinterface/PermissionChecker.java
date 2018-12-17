@@ -2,148 +2,198 @@ package io.highfidelity.hifiinterface;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.DialogInterface;
+import android.content.ComponentName;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.text.TextUtils;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
 
+import com.google.vr.ndk.base.DaydreamApi;
 import com.google.vr.sdk.base.Constants;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
-import java.util.Arrays;
-import java.util.List;
 
 public class PermissionChecker extends Activity {
-    private static final int REQUEST_PERMISSIONS = 20;
 
-    private static final boolean CHOOSE_AVATAR_ON_STARTUP = false;
+    private static final int REQUEST_PERMISSIONS = 20;
+    private static final int REQUEST_PERMISSIONS_VR = 21;
+    private static final int REQUEST_EXIT_VR = 30;
+
+
     private static final String TAG = "Interface";
+    private static final String PREFERENCE_ASKED_PERMISSIONS = "asked_permissions";
+    public static final String EXTRA_BYPASS_PERMISSION_CHECK = "bypass_check";
+    public static final String EXTRA_SINGLE_INTERFACE_ACTIVITY = "single_interface_activity";
+
     private boolean mIsDaydreamStarted;
+    private boolean mSingleInterfaceActivity;
+    private DaydreamApi mDaydreamApi;
+    private final String[] permissions = { Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                                           Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        mSingleInterfaceActivity = getIntent().getBooleanExtra(EXTRA_SINGLE_INTERFACE_ACTIVITY, false);
         mIsDaydreamStarted = getIntent().getCategories() != null && getIntent().getCategories().contains(Constants.DAYDREAM_CATEGORY);
-
-        Intent myIntent = new Intent(this, BreakpadUploaderService.class);
-        startService(myIntent);
-        if (CHOOSE_AVATAR_ON_STARTUP) {
-            showMenu();
+        if (getIntent().getBooleanExtra(EXTRA_BYPASS_PERMISSION_CHECK, false)) {
+            mIsDaydreamStarted = getIntent().getCategories() != null && getIntent().getCategories().contains(Constants.DAYDREAM_CATEGORY);
+            launchActivityWithPermissions();
+            return;
+        }
+        if (mDaydreamApi == null) {
+            mDaydreamApi = DaydreamApi.create(this);
         }
 
-        File obbDir = getObbDir();
-        if (!obbDir.exists()) {
-            if (obbDir.mkdirs()) {
-                Log.d(TAG, "Obb dir created");
+        if (savedInstanceState == null) {
+
+            Intent myIntent = new Intent(this, BreakpadUploaderService.class);
+            startService(myIntent);
+
+            File obbDir = getObbDir();
+            if (!obbDir.exists()) {
+                if (obbDir.mkdirs()) {
+                    Log.d(TAG, "Obb dir created");
+                }
+            }
+
+            if (arePermissionsGranted(permissions)) {
+                launchActivityWithPermissions();
+            } else if (!hasAskedPermissionsAnytime() || shouldShowRequestPermissionRationale(permissions)) {
+                if (mIsDaydreamStarted) {
+                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                    mDaydreamApi.exitFromVr(this, PermissionChecker.REQUEST_EXIT_VR, null);
+                } else {
+                    requestPermissions(permissions, REQUEST_PERMISSIONS);
+                }
+            } else {
+                // permissions are not granted but the user checked "Don't ask again"
+                launchActivityWithPermissions();
             }
         }
-
-        requestAppPermissions(new
-                        String[]{
-                        Manifest.permission.READ_EXTERNAL_STORAGE,
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                        Manifest.permission.RECORD_AUDIO,
-                        Manifest.permission.CAMERA}
-                ,2,REQUEST_PERMISSIONS);
-
     }
 
-    public void requestAppPermissions(final String[] requestedPermissions,
-                                      final int stringId, final int requestCode) {
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mDaydreamApi != null) {
+            mDaydreamApi.close();
+            mDaydreamApi = null;
+        }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+    }
+
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        super.onSaveInstanceState(savedInstanceState);
+        savedInstanceState.putBoolean(Constants.DAYDREAM_CATEGORY, mIsDaydreamStarted);
+        savedInstanceState.putBoolean(EXTRA_SINGLE_INTERFACE_ACTIVITY, mSingleInterfaceActivity);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        mIsDaydreamStarted = savedInstanceState.getBoolean(Constants.DAYDREAM_CATEGORY, false);
+        mSingleInterfaceActivity = savedInstanceState.getBoolean(EXTRA_SINGLE_INTERFACE_ACTIVITY, false);
+    }
+
+    private boolean hasAskedPermissionsAnytime() {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        return preferences.getBoolean(PREFERENCE_ASKED_PERMISSIONS, false);
+    }
+
+    private void setAskedPermission() {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        preferences.edit().putBoolean(PREFERENCE_ASKED_PERMISSIONS, true).commit();
+    }
+
+    private boolean arePermissionsGranted(final String[] requestedPermissions) {
         int permissionCheck = PackageManager.PERMISSION_GRANTED;
-        boolean shouldShowRequestPermissionRationale = false;
         for (String permission : requestedPermissions) {
             permissionCheck = permissionCheck + checkSelfPermission(permission);
-            shouldShowRequestPermissionRationale = shouldShowRequestPermissionRationale || shouldShowRequestPermissionRationale(permission);
         }
-        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
-            System.out.println("Permission was not granted. Ask for permissions");
-            if (shouldShowRequestPermissionRationale) {
-                requestPermissions(requestedPermissions, requestCode);
-            } else {
-                requestPermissions(requestedPermissions, requestCode);
-            }
-        } else {
-            System.out.println("Launching the other activity..");
-            launchActivityWithPermissions();
-        }
+
+        return permissionCheck == PackageManager.PERMISSION_GRANTED;
     }
 
-    private void launchActivityWithPermissions(){
+    private boolean shouldShowRequestPermissionRationale(final String[] requestedPermissions) {
+        boolean shouldShowRequestPermissionRationale = false;
+        for (String permission : requestedPermissions) {
+            shouldShowRequestPermissionRationale = shouldShowRequestPermissionRationale || shouldShowRequestPermissionRationale(permission);
+        }
+        return shouldShowRequestPermissionRationale;
+    }
+
+    private void launchActivityWithPermissions() {
         Intent i = new Intent(this, InterfaceActivity.class);
         if (mIsDaydreamStarted) {
             i.addCategory(Constants.DAYDREAM_CATEGORY);
         }
-        startActivity(i);
+
+        if (mSingleInterfaceActivity) {
+            i.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        }
         finish();
-    }
-
-    private void showMenu(){
-        final List<String> avatarOptions = Arrays.asList("\uD83D\uDC66\uD83C\uDFFB Cody","\uD83D\uDC66\uD83C\uDFFF Will","\uD83D\uDC68\uD83C\uDFFD Albert", "\uD83D\uDC7D Being of Light");
-        final String[] avatarPaths = {
-            "http://mpassets.highfidelity.com/8c859fca-4cbd-4e82-aad1-5f4cb0ca5d53-v1/cody.fst",
-            "http://mpassets.highfidelity.com/d029ae8d-2905-4eb7-ba46-4bd1b8cb9d73-v1/4618d52e711fbb34df442b414da767bb.fst",
-            "http://mpassets.highfidelity.com/1e57c395-612e-4acd-9561-e79dbda0bc49-v1/albert.fst" };
-
-          final String pathForJson = "/data/data/io.highfidelity.hifiinterface/files/.config/High Fidelity - dev/";
-        new AlertDialog.Builder(this)
-        .setTitle("Pick an avatar")
-        .setItems(avatarOptions.toArray(new CharSequence[avatarOptions.size()]),new DialogInterface.OnClickListener(){
-
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                if(which < avatarPaths.length ) {
-                    JSONObject obj = new JSONObject();
-                        try {
-                            obj.put("firstRun",false);
-                            obj.put("Avatar/fullAvatarURL", avatarPaths[which]);
-                            File directory = new File(pathForJson);
-
-                            if(!directory.exists()) directory.mkdirs();
-
-                            File file = new File(pathForJson + "Interface.json");
-                            Writer output = new BufferedWriter(new FileWriter(file));
-                            output.write(obj.toString().replace("\\",""));
-                            output.close();
-                            System.out.println("I Could write config file expect to see the selected avatar"+obj.toString().replace("\\",""));
-
-                        } catch (JSONException e) {
-                            System.out.println("JSONException something weired went wrong");
-                        } catch (IOException e) {
-                            System.out.println("Could not write file :(");
-                        }
-                } else {
-                    System.out.println("Default avatar selected...");
-                }
-                launchActivityWithPermissions();
-            }
-        }).show();
+        startActivity(i);
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        setAskedPermission();
         int permissionCheck = PackageManager.PERMISSION_GRANTED;
         for (int permission : grantResults) {
             permissionCheck = permissionCheck + permission;
         }
-        if ((grantResults.length > 0) && permissionCheck == PackageManager.PERMISSION_GRANTED) {
-            launchActivityWithPermissions();
-        } else if (grantResults.length > 0) {
+        if ((grantResults.length > 0) && permissionCheck != PackageManager.PERMISSION_GRANTED) {
             System.out.println("User has deliberately denied Permissions. Launching anyways");
-            launchActivityWithPermissions();
+        }
+        switch (requestCode) {
+            case REQUEST_PERMISSIONS:
+                launchActivityWithPermissions();
+                break;
+            case REQUEST_PERMISSIONS_VR:
+                // show button
+                setContentView(R.layout.back_to_vr);
+                break;
+            default:
+                break;
+        }
+    }
+
+    public void onBackToVrClicked(View view) {
+        view.setVisibility(View.INVISIBLE);
+        Intent i = mDaydreamApi.createVrIntent(new ComponentName(this, PermissionChecker.class));
+        i.addCategory(Constants.DAYDREAM_CATEGORY);
+        i.putExtra(EXTRA_BYPASS_PERMISSION_CHECK, true);
+        mDaydreamApi.launchInVr(i);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+            case REQUEST_EXIT_VR:
+                if (resultCode == RESULT_OK) {
+                    requestPermissions(permissions, REQUEST_PERMISSIONS_VR);
+                } else if (resultCode == RESULT_CANCELED) {
+                    finish();
+                }
+                break;
+            default:
+                break;
         }
     }
 
