@@ -89,6 +89,11 @@ private:
 
         DaydreamControllerManager& _parent;
         friend class DaydreamControllerManager;
+    private:
+        glm::mat4 genNegativeAdjustmentRotationAroundYMatrix(glm::mat4 original);
+
+        glm::mat4 _adjustmentRotationMatrix { glm::mat4() };
+        bool _justRecentered { false };
     };
 
     DaydreamControllerDevice::Pointer _controller;

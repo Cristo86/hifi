@@ -27,6 +27,7 @@
 #include <controllers/StandardControls.h>
 
 
+#include <glm/gtx/matrix_decompose.hpp>
 
 const QString DaydreamControllerManager::NAME = "Daydream";
 static const char* MENU_PATH = "Avatar" ">" "Daydream Controllers";
@@ -158,6 +159,10 @@ void DaydreamControllerManager::DaydreamControllerDevice::update(float deltaTime
 void DaydreamControllerManager::DaydreamControllerDevice::handleController(GvrState *gvrState, float deltaTime, const controller::InputCalibrationData& inputCalibrationData) {
 
       gvr::ControllerQuat orientation = gvrState->_controller_state.GetOrientation();
+      if (gvrState->_controller_state.GetRecentered()) {
+        //qDebug("[DAYDREAM-CONTROLLER] just recentered! * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *");
+        _justRecentered = true;
+    }
       //qDebug() << "[DAYDREAM-CONTROLLER]: gvr::ControllerQuat orientation: " << orientation.qx << "," << orientation.qy << "," << orientation.qz << "," << orientation.qw;
       handlePoseEvent(deltaTime, inputCalibrationData, orientation);
 
@@ -219,25 +224,20 @@ void DaydreamControllerManager::DaydreamControllerDevice::handleHeadPose(GvrStat
 
 void DaydreamControllerManager::DaydreamControllerDevice::handlePoseEvent(float deltaTime, const controller::InputCalibrationData& inputCalibrationData, gvr::ControllerQuat gvrOrientation) {
     glm::quat orientation = toGlm(gvrOrientation);
-    //qDebug() << "[DAYDREAM-CONTROLLER]: gvr::ControllerQuat GLM orientation: " << orientation.x << "," << orientation.y << "," << orientation.z << "," << orientation.w;
-    auto pose = daydreamControllerPoseToHandPose(false, orientation);
-    //vec3 tranz = pose.getTranslation();
-    //quat rotz = pose.getRotation();
-    //qDebug() << "[DAYDREAM-CONTROLLER]: gvr::ControllerQuat handPose tranz : " << tranz.x << "," << tranz.y << "," << tranz.z;
-    //qDebug() << "[DAYDREAM-CONTROLLER]: gvr::ControllerQuat handPose rotz : " << rotz.x << "," << rotz.y << "," << rotz.z << "," << rotz.w;
-    //qDebug() << "[DAYDREAM-CONTROLLER]: gvr::ControllerQuat pose : " << orientation.x << "," << orientation.y "," << orientation.z "," << orientation.w;
     // transform into avatar frame
     glm::mat4 controllerToAvatar = glm::inverse(inputCalibrationData.avatarMat) * inputCalibrationData.sensorToWorldMat;
-    auto pose2 = pose.transform(controllerToAvatar);
-    //vec3 tranz2 = pose2.getTranslation();
-    //quat rotz2 = pose2.getRotation();
-    //_poseStateMap[controller::RIGHT_HAND] = pose.transform(controllerToAvatar);
-    _poseStateMap[controller::RIGHT_HAND] = pose2;
-    //qDebug() << "[DAYDREAM-CONTROLLER]: gvr::ControllerQuat handPose tranz2: " << tranz2.x << "," << tranz2.y << "," << tranz2.z;
-    //qDebug() << "[DAYDREAM-CONTROLLER]: gvr::ControllerQuat handPose rotz2: " << rotz.x << "," << rotz2.y << "," << rotz2.z << "," << rotz2.w;
+
+    if (_justRecentered) {
+        _adjustmentRotationMatrix = genNegativeAdjustmentRotationAroundYMatrix(controllerToAvatar);
+
+        _justRecentered = false;
+    }
+
+    auto pose = daydreamControllerPoseToHandPose(false, orientation);
+    _poseStateMap[controller::RIGHT_HAND] = pose.transform(_adjustmentRotationMatrix).transform(controllerToAvatar);
 
     pose = daydreamControllerPoseToHandPose(true, orientation);    
-    _poseStateMap[controller::LEFT_HAND] = pose.transform(controllerToAvatar);
+    _poseStateMap[controller::LEFT_HAND] = pose.transform(_adjustmentRotationMatrix).transform(controllerToAvatar);
 }
 
 // These functions do translation from the Steam IDs to the standard controller IDs
@@ -344,6 +344,28 @@ void DaydreamControllerManager::DaydreamControllerDevice::focusOutEvent() {
     _axisStateMap.clear();
     _buttonPressedMap.clear();
 };
+
+glm::mat4 DaydreamControllerManager::DaydreamControllerDevice::genNegativeAdjustmentRotationAroundYMatrix(glm::mat4 original) {
+    glm::vec3 scale;
+    glm::quat rotation;
+    glm::vec3 translation;
+    glm::vec3 skew;
+    glm::vec4 perspective;
+    glm::decompose(original, scale, rotation, translation, skew, perspective);
+
+    glm::vec3 eulerAngles = glm::eulerAngles(rotation);
+
+    glm::quat negativeYRotation = glm::quat(glm::vec3(eulerAngles.x, -eulerAngles.y, eulerAngles.z));
+
+    controller::Pose pose;
+    pose.translation = glm::vec3(0.0f);
+    pose.rotation = negativeYRotation;
+    pose.angularVelocity = glm::vec3(0.0f);
+    pose.velocity = glm::vec3(0.0f);
+    pose.valid = true;
+
+    return pose.getMatrix();
+}
 
 controller::Input::NamedVector DaydreamControllerManager::DaydreamControllerDevice::getAvailableInputs() const {
     using namespace controller;
