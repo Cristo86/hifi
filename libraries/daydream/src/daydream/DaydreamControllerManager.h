@@ -52,9 +52,9 @@ private:
         void handleHeadPose(GvrState *gvrState, float deltaTime, const controller::InputCalibrationData& inputCalibrationData);
         void handlePoseEvent(float deltaTime, const controller::InputCalibrationData& inputCalibrationData, gvr::ControllerQuat orientation);
         void handleButtonEvent(float deltaTime, uint32_t button, bool justPressed, bool justReleased, bool currentlyPressed);
-        void handleAxisEvent(float deltaTime, bool isTouching, gvr_vec2f touchPos);
+        void handleAxisEvent(float deltaTime, bool isTouching, gvr_vec2f touchPos, int xAxis, int yAxis);
         void focusOutEvent() override;
-        void partitionTouchpad(int sButton, int xAxis, int yAxis, int centerPsuedoButton, int xPseudoButton, int yPseudoButton);
+        void partitionTouchpad(int sButton, int xAxis, int yAxis, int centerPsuedoButton, int xPseudoButton, int yPseudoButton, int triggerButton);
         
         QString nvlButn(int w);
         QString nvlAxis(int w);
@@ -94,6 +94,7 @@ private:
 
         glm::mat4 _adjustmentRotationMatrix { glm::mat4() };
         bool _justRecentered { false };
+        bool _isLeftHanded { false };
     };
 
     DaydreamControllerDevice::Pointer _controller;
