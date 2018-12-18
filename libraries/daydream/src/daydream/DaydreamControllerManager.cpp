@@ -148,11 +148,6 @@ void DaydreamControllerManager::DaydreamControllerDevice::update(float deltaTime
             gvrState->_last_controller_connection_state = currentConnectionState;
     }
 
-    // Will update this 'button' status in every update
-    if (currentConnectionState == GVR_CONTROLLER_CONNECTED) {
-        _buttonPressedMap.insert(controller::GUIDE);
-    }
-
     handleController(gvrState, deltaTime, inputCalibrationData);
 
     handleHeadPose(gvrState, deltaTime, inputCalibrationData);
@@ -411,8 +406,6 @@ controller::Input::NamedVector DaydreamControllerManager::DaydreamControllerDevi
 
         makePair(HEAD, "Head"),
 
-        // This will tell us if the controller is connected
-        makePair(GUIDE, "Guide"),
     };
 
     return availableInputs;

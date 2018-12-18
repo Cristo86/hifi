@@ -18,6 +18,7 @@
 #include <gpu/Context.h>
 
 #ifdef ANDROID
+#define NECK_MODEL_FACTOR 1.0
 #include <QtOpenGL/QGLWidget>
 #include <display-plugins/OpenGLDisplayPlugin.h>
 #include <QtWidgets/QApplication>
@@ -129,7 +130,7 @@ void DaydreamDisplayPlugin::internalPresent() {
     gvr::ClockTimePoint pred_time = gvr::GvrApi::GetTimePointNow();
     pred_time.monotonic_system_time_nanos += 50000000; // 50ms
 
-    gvr::Mat4f head_view = gvrState->_gvr_api->GetHeadSpaceFromStartSpaceTransform(pred_time);
+    gvr::Mat4f head_view = gvrState->_gvr_api->ApplyNeckModel(gvrState->_gvr_api->GetHeadSpaceFromStartSpaceTransform(pred_time), NECK_MODEL_FACTOR);
     _frame.Unbind();
     {PROFILE_RANGE_EX(render, "gvrFrameSubmit", 0xff33ff22, (uint64_t)presentCount())
     _frame.Submit(gvrState->_viewport_list, head_view);
@@ -147,6 +148,7 @@ void DaydreamDisplayPlugin::internalPresent() {
         submitFrameCounter++;
 
     swapBuffers();
+    _presentRate.increment();
 }
 
 ivec4 DaydreamDisplayPlugin::getViewportForSourceSize(const uvec2& size) const {
