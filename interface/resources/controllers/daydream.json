@@ -25,8 +25,7 @@
         { "from": "Daydream.LeftHand", "to": "Standard.LeftHand", "when": [ "Application.InHMD" ]  },
 
 
-        { "from": "Daydream.Head", "to" : "Standard.Head", "when" : [ "Application.InHMD"] },
+        { "from": "Daydream.Head", "to" : "Standard.Head", "when" : [ "Application.InHMD"] }
 
-        { "from": "Daydream.Guide", "to": "Standard.Guide", "peek": true }
     ]
 }
