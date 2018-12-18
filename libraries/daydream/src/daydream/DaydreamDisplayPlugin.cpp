@@ -148,6 +148,7 @@ void DaydreamDisplayPlugin::internalPresent() {
         submitFrameCounter++;
 
     swapBuffers();
+    _presentRate.increment();
 }
 
 ivec4 DaydreamDisplayPlugin::getViewportForSourceSize(const uvec2& size) const {
