@@ -11,8 +11,6 @@
 		{ "from": "Daydream.RightPrimaryThumb", "to": "Standard.RightPrimaryThumb" },
 
         { "from": "Daydream.RightHand", "to": "Standard.RightHand", "when": [ "Application.InHMD" ]  },
-        { "from": "Daydream.Head", "to" : "Standard.Head", "when" : [ "Application.InHMD"] },
-
-        { "from": "Daydream.Guide", "to": "Standard.Guide", "peek": true }
+        { "from": "Daydream.Head", "to" : "Standard.Head", "when" : [ "Application.InHMD"] }
     ]
 }
