@@ -129,6 +129,8 @@ void DaydreamControllerManager::DaydreamControllerDevice::update(float deltaTime
 
     GvrState *gvrState = GvrState::getInstance();
 
+    _isLeftHanded = gvrState->_gvr_api->GetUserPrefs().GetControllerHandedness() == gvr::kControllerLeftHanded;
+
     // Read current controller state. This must be done once per frame
     gvrState->_controller_state.Update(*gvrState->_controller_api);
 
@@ -182,8 +184,13 @@ void DaydreamControllerManager::DaydreamControllerDevice::handleController(GvrSt
     if (trackpadClicked) {
         bool isTouching = gvrState->_controller_state.IsTouching();
         gvr_vec2f touchPos = gvrState->_controller_state.GetTouchPos();
-        handleAxisEvent(deltaTime, isTouching, touchPos);
-        partitionTouchpad(controller::RS, controller::RX, controller::RY, controller::RT_CLICK, controller::RS_X, controller::RS_Y);
+        if (_isLeftHanded) {
+            handleAxisEvent(deltaTime, isTouching, touchPos, controller::LX, controller::LY);
+            partitionTouchpad(controller::LS, controller::LX, controller::LY, controller::LT_CLICK, controller::LS_X, controller::LS_Y, controller::LT);
+        } else {
+            handleAxisEvent(deltaTime, isTouching, touchPos, controller::RX, controller::RY);
+            partitionTouchpad(controller::RS, controller::RX, controller::RY, controller::RT_CLICK, controller::RS_X, controller::RS_Y, controller::RT);
+        }
     } else {
         _rtClickStarted = false;
     }
@@ -228,11 +235,8 @@ void DaydreamControllerManager::DaydreamControllerDevice::handlePoseEvent(float 
         _justRecentered = false;
     }
 
-    auto pose = daydreamControllerPoseToHandPose(false, orientation);
-    _poseStateMap[controller::RIGHT_HAND] = pose.transform(_adjustmentRotationMatrix).transform(controllerToAvatar);
-
-    pose = daydreamControllerPoseToHandPose(true, orientation);    
-    _poseStateMap[controller::LEFT_HAND] = pose.transform(_adjustmentRotationMatrix).transform(controllerToAvatar);
+    auto pose = daydreamControllerPoseToHandPose(_isLeftHanded, orientation);
+    _poseStateMap[_isLeftHanded ? controller::LEFT_HAND : controller::RIGHT_HAND] = pose.transform(_adjustmentRotationMatrix).transform(controllerToAvatar);
 }
 
 // These functions do translation from the Steam IDs to the standard controller IDs
@@ -249,10 +253,10 @@ void DaydreamControllerManager::DaydreamControllerDevice::handleButtonEvent(floa
             //qDebug() << "[DAYDREAM-CONTROLLER]: RT_CLICK inserted";
             //_buttonPressedMap.insert(RT_CLICK);
             //_buttonPressedMap.insert(RT);
-            _buttonPressedMap.insert(RS);
-            _buttonPressedMap.insert(RS_TOUCH);
+            _buttonPressedMap.insert(_isLeftHanded ? LS : RS);
+            _buttonPressedMap.insert(_isLeftHanded ? LS_TOUCH : RS_TOUCH);
         } else if (button == gvr_controller_button::GVR_CONTROLLER_BUTTON_APP) {
-            _buttonPressedMap.insert(RIGHT_PRIMARY_THUMB);
+            _buttonPressedMap.insert(_isLeftHanded ? LEFT_PRIMARY_THUMB : RIGHT_PRIMARY_THUMB);
           //_buttonPressedMap.insert(LS);
         } else if (button == gvr_controller_button::GVR_CONTROLLER_BUTTON_HOME) {
             // TODO: we must not use this home button, check the desired mapping
@@ -269,10 +273,10 @@ void DaydreamControllerManager::DaydreamControllerDevice::handleButtonEvent(floa
             //qDebug() << "[DAYDREAM-CONTROLLER]: RT_CLICK inserted (continues)";
             //_buttonPressedMap.insert(RT_CLICK);
             //_buttonPressedMap.insert(RT);
-            _buttonPressedMap.insert(RS);
-            _buttonPressedMap.insert(RS_TOUCH);
+            _buttonPressedMap.insert(_isLeftHanded ? LS : RS);
+            _buttonPressedMap.insert(_isLeftHanded ? LS_TOUCH : RS_TOUCH);
         } else if (button == gvr_controller_button::GVR_CONTROLLER_BUTTON_APP) {
-            _buttonPressedMap.insert(RIGHT_PRIMARY_THUMB);
+            _buttonPressedMap.insert(_isLeftHanded ? LEFT_PRIMARY_THUMB : RIGHT_PRIMARY_THUMB);
           //_buttonPressedMap.insert(LS);
         }
     }
@@ -285,34 +289,33 @@ void DaydreamControllerManager::DaydreamControllerDevice::handleButtonEvent(floa
             //qDebug() << "[DAYDREAM-CONTROLLER]: RT_CLICK inserted";
             //_buttonPressedMap.insert(RT_CLICK);
         } else if (button == gvr_controller_button::GVR_CONTROLLER_BUTTON_APP) {
-            _buttonPressedMap.insert(RIGHT_PRIMARY_THUMB);
+            _buttonPressedMap.insert(_isLeftHanded ? LEFT_PRIMARY_THUMB : RIGHT_PRIMARY_THUMB);
           //_buttonPressedMap.insert(LS);
         }
     }
 }
 
 // These functions do translation from the Steam IDs to the standard controller IDs
-void DaydreamControllerManager::DaydreamControllerDevice::handleAxisEvent(float deltaTime, bool isTouching, gvr_vec2f touchPos) {
+void DaydreamControllerManager::DaydreamControllerDevice::handleAxisEvent(float deltaTime, bool isTouching, gvr_vec2f touchPos, int xAxis, int yAxis) {
     using namespace controller;
     if (isTouching) {
         glm::vec2 stick(2*(touchPos.x-0.5f), 2*(touchPos.y-0.5f));
         stick = _filteredRightStick.process(deltaTime, stick);
         //qDebug() << "[DAYDREAM-CONTROLLER]: Touching x:" << stick.x << " y:" << stick.y;
-        _axisStateMap[RX] = stick.x;// * 10000.0f;
-        _axisStateMap[RY] = stick.y;// * 10000.0f;
-
+        _axisStateMap[xAxis] = stick.x;
+        _axisStateMap[yAxis] = stick.y;
     } else {
       _axisStateMap.clear();
     }
 }
 
-void DaydreamControllerManager::DaydreamControllerDevice::partitionTouchpad(int sButton, int xAxis, int yAxis, int centerPseudoButton, int xPseudoButton, int yPseudoButton) {
+void DaydreamControllerManager::DaydreamControllerDevice::partitionTouchpad(int sButton, int xAxis, int yAxis, int centerPseudoButton, int xPseudoButton, int yPseudoButton, int triggerButton) {
     // Populate the L/RS_CENTER/OUTER pseudo buttons, corresponding to a partition of the L/RS space based on the X/Y values.
     const float CENTER_DEADBAND = 0.6f;
     const float DIAGONAL_DIVIDE_IN_RADIANS = PI / 4.0f;
     if (_buttonPressedMap.find(sButton) != _buttonPressedMap.end()) {
-        float absX = fabs(_axisStateMap[controller::RX]);
-        float absY = fabs(_axisStateMap[controller::RY]);
+        float absX = fabs(_axisStateMap[xAxis]);
+        float absY = fabs(_axisStateMap[yAxis]);
         glm::vec2 cartesianQuadrantI(absX, absY);
         float angle = glm::atan(cartesianQuadrantI.y / cartesianQuadrantI.x);
         float radius = glm::length(cartesianQuadrantI);
@@ -326,8 +329,8 @@ void DaydreamControllerManager::DaydreamControllerDevice::partitionTouchpad(int 
             // RT_CLICK
             _buttonPressedMap.insert(toInsert);
             // extra RT
-            _buttonPressedMap.insert(controller::RT);
-            _axisStateMap[controller::RT] = 1;
+            _buttonPressedMap.insert(triggerButton);
+            _axisStateMap[triggerButton] = 1;
             // save so we keep sending the click message
             _rtClickStarted = true;
         }
@@ -368,27 +371,39 @@ controller::Input::NamedVector DaydreamControllerManager::DaydreamControllerDevi
 
         // touch pad press
         makePair(RS, "RS"),
+        makePair(LS, "LS"),
 
         makePair(RX, "RX"),
         makePair(RY, "RY"),
+        makePair(LX, "LX"),
+        makePair(LY, "LY"),
         
         makePair(RS_TOUCH, "RSTouch"),
+        makePair(LS_TOUCH, "LSTouch"),
 
         // triggers
         makePair(RT, "RT"),
+        makePair(LT, "LT"),
 
         // Trigger clicks
         makePair(RT_CLICK, "RTClick"),
+        makePair(LT_CLICK, "LTClick"),
 
         // Differentiate where we are in the touch pad click
         makePair(RS_CENTER, "RSCenter"),
         makePair(RS_X, "RSX"),
         makePair(RS_Y, "RSY"),
+        makePair(LS_CENTER, "LSCenter"),
+        makePair(LS_X, "LSX"),
+        makePair(LS_Y, "LSY"),
 
         makePair(RIGHT_PRIMARY_THUMB, "RightPrimaryThumb"),
+        makePair(LEFT_PRIMARY_THUMB, "LeftPrimaryThumb"),
 
         // 3d location of controller
         makePair(RIGHT_HAND, "RightHand"),
+        makePair(LEFT_HAND, "LeftHand"),
+
         makePair(HEAD, "Head"),
 
     };

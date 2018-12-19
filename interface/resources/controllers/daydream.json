@@ -11,6 +11,21 @@
 		{ "from": "Daydream.RightPrimaryThumb", "to": "Standard.RightPrimaryThumb" },
 
         { "from": "Daydream.RightHand", "to": "Standard.RightHand", "when": [ "Application.InHMD" ]  },
+
+
+        { "from": "Daydream.LY", "when": "Daydream.LSY", "to": "Actions.TranslateZ", "debug": true },
+        { "from": "Daydream.LX", "when": "Daydream.LSX", "to": "Standard.RX", "debug": true },
+
+        { "from": "Daydream.LTClick", "to": "Standard.LTClick", "peek": true, "debug": true},
+        { "from": "Daydream.LS", "to": "Standard.LS" },
+        { "from": "Daydream.LT", "to": "Standard.LT"},
+        { "from": "Daydream.LSTouch", "to": "Standard.LSTouch" },
+        { "from": "Daydream.LeftPrimaryThumb", "to": "Standard.LeftPrimaryThumb" },
+
+        { "from": "Daydream.LeftHand", "to": "Standard.LeftHand", "when": [ "Application.InHMD" ]  },
+
+
         { "from": "Daydream.Head", "to" : "Standard.Head", "when" : [ "Application.InHMD"] }
+
     ]
 }
