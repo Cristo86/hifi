@@ -11,6 +11,7 @@
 
 package io.highfidelity.hifiinterface;
 
+import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -396,12 +397,23 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
         switch (activityName) {
             case MainActivity.FRAGMENT_HOME:
             case MainActivity.FRAGMENT_PRIVACY_POLICY:
-            case MainActivity.FRAGMENT_SETTINGS:
                 nativeBeforeEnterBackground();
                 Intent intent = new Intent(this, MainActivity.class);
                 intent.putExtra(MainActivity.EXTRA_FRAGMENT, activityName);
                 intent.putExtra(MainActivity.EXTRA_BACK_TO_SCENE, backToScene);
                 startActivity(intent);
+                break;
+            case MainActivity.FRAGMENT_SETTINGS:
+                nativeBeforeEnterBackground();
+                try {
+                    Intent settingsIntent = Intent.makeMainActivity(new ComponentName("com.google.vr.vrcore", "com.google.vr.vrcore.settings.VrSettingsActivity"));
+                    startActivity(settingsIntent);
+                } catch (ActivityNotFoundException e) {
+                    Intent intentMain = new Intent(this, MainActivity.class);
+                    intentMain.putExtra(MainActivity.EXTRA_FRAGMENT, activityName);
+                    intentMain.putExtra(MainActivity.EXTRA_BACK_TO_SCENE, backToScene);
+                    startActivity(intentMain);
+                }
                 break;
             case MainActivity.FRAGMENT_LOGIN:
                 nativeBeforeEnterBackground();
