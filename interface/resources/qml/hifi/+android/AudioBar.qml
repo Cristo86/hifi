@@ -52,6 +52,7 @@ Item {
     Component.onCompleted: {
         relocateAndResize(parent.width, parent.height);
         Window.geometryChanged.connect(onWindowGeometryChanged); // In devices with bars appearing at startup we should listen for this
+        relocateAndResize(Window.innerWidth , Window.innerHeight);
     }
 
     Component.onDestruction: {
