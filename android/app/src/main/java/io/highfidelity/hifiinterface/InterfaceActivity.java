@@ -26,6 +26,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Vibrator;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -127,9 +128,19 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
         }
 
         Intent intent = getIntent();
+        String arguments = "";
         if (intent.hasExtra(DOMAIN_URL) && !intent.getStringExtra(DOMAIN_URL).isEmpty()) {
-            intent.putExtra("applicationArguments", "--url " + intent.getStringExtra(DOMAIN_URL));
+            arguments += "--url " + intent.getStringExtra(DOMAIN_URL) + " ";
         }
+
+        if (mIsDaydreamStarted) {
+            arguments += "--display Daydream ";
+        }
+
+        if (!TextUtils.isEmpty(arguments)) {
+            intent.putExtra("applicationArguments", arguments);
+        }
+
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
