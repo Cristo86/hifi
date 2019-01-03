@@ -254,7 +254,7 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
     protected void onResume() {
         super.onResume();
         nativeEnterForeground();
-        surfacesWorkaround();
+        //surfacesWorkaround();
         keepInterfaceRunning = false;
         registerReceiver(headsetStateReceiver, new IntentFilter(Intent.ACTION_HEADSET_PLUG));
         gvrApi.resumeTracking();
@@ -282,7 +282,7 @@ public class InterfaceActivity extends QtActivity implements WebViewFragment.OnW
         if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT){
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         }
-        surfacesWorkaround();
+        //surfacesWorkaround();
     }
 
     private void surfacesWorkaround() {
