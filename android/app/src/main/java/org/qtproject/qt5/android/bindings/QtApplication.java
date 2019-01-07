@@ -149,9 +149,13 @@ public class QtApplication extends Application {
 
         for (Method m : m_delegateMethods.get(methodName)) {
             if (m.getParameterTypes().length == args.length) {
-                result.methodReturns = invokeDelegateMethod(m, args);
-                result.invoked = true;
-                return result;
+                try {
+                    result.methodReturns = invokeDelegateMethodSafe(m, args);
+                    result.invoked = true;
+                    return result;
+                } catch (RuntimeException e) {
+                    e.printStackTrace();
+                }
             }
         }
         return result;
@@ -165,4 +169,15 @@ public class QtApplication extends Application {
         }
         return null;
     }
+
+    // GC: this is another version of invokeDelegateMethod with proper exception handling
+    // the same happens in QtActivityDelegate but this's packaged into QtAndroid.jar
+    public static Object invokeDelegateMethodSafe(Method m, Object... args) {
+        try {
+            return m.invoke(m_delegateObject, args);
+        } catch (Exception e) {
+            throw new RuntimeException("Exception executing " + m.getName(), e);
+        }
+    }
+
 }
